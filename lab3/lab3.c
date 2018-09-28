@@ -59,6 +59,7 @@ unsigned char *original_image_threshold(unsigned char *original_image, int origi
     return output_threshold_image;
 }
 
+/* DETERMINES IF CURRENT PIXEL OF IMAGE NEEDS TO BE ERASED/KEPT FROM THINNING IMAGE */
 int mark_pixel(unsigned char *image, int image_rows, int image_cols, int row, int col)
 {
 	// Variable Declaration Section
@@ -167,7 +168,6 @@ int mark_pixel(unsigned char *image, int image_rows, int image_cols, int row, in
 
     if (edge_to_nonedge == 1)
     {
-        printf("HERE\n");
         if ((edge_neighbors >= 3) && (edge_neighbors <= 7))
         {
             if ((A == NOT_EDGE) || (B == NOT_EDGE) || ((C == NOT_EDGE) && (D == NOT_EDGE)))
@@ -180,6 +180,7 @@ int mark_pixel(unsigned char *image, int image_rows, int image_cols, int row, in
 	return 0;
 }
 
+/* THINNING OF ORIGINAL THRESHOLD IMAGE */
 void thinning(unsigned char *image, int image_rows, int image_cols)
 {
 	// Variable Declaration Section
@@ -211,13 +212,17 @@ void thinning(unsigned char *image, int image_rows, int image_cols)
 		{
 			for (col = 1; col < (image_cols - 1); col++)
 			{
-				is_pixel_marked = mark_pixel(thined_image, image_rows, image_cols, row, col);
-                if (is_pixel_marked == 1)
-				{
-					index = (row * image_cols) + col;
-					temp_image[index] = 0;
-                    run_again = 1;
-				}
+                index = (row * image_cols) + col;
+                if (thined_image[index] == 255)
+                {
+                    is_pixel_marked = mark_pixel(thined_image, image_rows, image_cols, row, col);
+                    if (is_pixel_marked == 1)
+                    {
+                        index = (row * image_cols) + col;
+                        temp_image[index] = 0;
+                        run_again = 1;
+                    }
+                }        
 			}
 		}
 
