@@ -46,7 +46,7 @@ unsigned char *original_image_threshold(unsigned char *original_image, int origi
 
     for (c1 = 0; c1 < (original_image_rows * original_image_cols); c1++)
     {
-        if (original_image[c1] < threshold)
+        if (original_image[c1] <= threshold)
         {
             output_threshold_image[c1] = 255;
         }
@@ -60,7 +60,7 @@ unsigned char *original_image_threshold(unsigned char *original_image, int origi
 }
 
 /* DETERMINES IF CURRENT PIXEL OF IMAGE NEEDS TO BE ERASED/KEPT FROM THINNING IMAGE */
-int mark_pixel(unsigned char *image, int image_rows, int image_cols, int row, int col)
+void get_transitions(unsigned char *image, int image_rows, int image_cols, int row, int col, int *mark_pixel, int *end_points, int *branch_points)
 {
 	// Variable Declaration Section
 	int A, B, C, D;
@@ -85,10 +85,10 @@ int mark_pixel(unsigned char *image, int image_rows, int image_cols, int row, in
         {
             edge_to_nonedge++;
         }
-        if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
+       /* if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
         {
             edge_to_nonedge++;
-        }
+        }*/
         if (current_pixel == EDGE)
         {
             edge_neighbors++;
@@ -107,10 +107,10 @@ int mark_pixel(unsigned char *image, int image_rows, int image_cols, int row, in
         {
             edge_to_nonedge++;
         }
-        if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
+       /* if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
         {
             edge_to_nonedge++;
-        }
+        }*/
         if (current_pixel == EDGE)
         {
             edge_neighbors++;
@@ -123,16 +123,16 @@ int mark_pixel(unsigned char *image, int image_rows, int image_cols, int row, in
         index = ((row + 1) * image_cols) + c1;
         current_pixel = image[index];
         index2 = ((row + 1) * image_cols) + (c1 - 1);
-        next_pixel = image[index];
+        next_pixel = image[index2];
 
         if ((current_pixel == EDGE) && (next_pixel == NOT_EDGE))
         {
             edge_to_nonedge++;
         }
-        if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
+      /*  if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
         {
             edge_to_nonedge++;
-        }
+        }*/
         if (current_pixel == EDGE)
         {
             edge_neighbors++;
@@ -151,10 +151,10 @@ int mark_pixel(unsigned char *image, int image_rows, int image_cols, int row, in
         {
             edge_to_nonedge++;
         }
-        if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
+        /*if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
         {
             edge_to_nonedge++;
-        }
+        }*/
         if (current_pixel == EDGE)
         {
             edge_neighbors++;
@@ -172,12 +172,31 @@ int mark_pixel(unsigned char *image, int image_rows, int image_cols, int row, in
         {
             if ((A == NOT_EDGE) || (B == NOT_EDGE) || ((C == NOT_EDGE) && (D == NOT_EDGE)))
             {
-                return 1;
+                *mark_pixel = 1;
+            }
+            else
+            {
+                *mark_pixel = 0;
             }
         }
+        else
+        {
+            *mark_pixel = 0;
+        }
+    }
+    else
+    {
+        *mark_pixel = 0;
     }
 
-	return 0;
+    if (edge_to_nonedge == 1)
+    {
+        *end_points++;
+    }
+    if (edge_to_nonedge > 2)
+    {
+        *branch_points++;
+    }
 }
 
 /* THINNING OF ORIGINAL THRESHOLD IMAGE */
@@ -188,8 +207,10 @@ void thinning(unsigned char *image, int image_rows, int image_cols)
 	int is_pixel_marked = 0;
 	int index = 0;
 	int run_again  = 1;
+    int end_points, branch_points;
 	unsigned char *thined_image;
 	unsigned char *temp_image;
+    end_points = branch_points = 0;
 
 	// Allocate memory for thined image
 	thined_image = (unsigned char *)calloc(image_rows * image_cols, sizeof(unsigned char));
@@ -202,9 +223,11 @@ void thinning(unsigned char *image, int image_rows, int image_cols)
 		temp_image[c1] = image[c1];
 	}
 
+    int count = 0;
 	// Thinning Algorithm
 	while(run_again == 1)
 	{
+        count = 0;
         run_again = 0;
         is_pixel_marked = 0;
 
@@ -215,12 +238,13 @@ void thinning(unsigned char *image, int image_rows, int image_cols)
                 index = (row * image_cols) + col;
                 if (thined_image[index] == 255)
                 {
-                    is_pixel_marked = mark_pixel(thined_image, image_rows, image_cols, row, col);
+                    get_transitions(thined_image, image_rows, image_cols, row, col, &is_pixel_marked, &end_points, &branch_points);
                     if (is_pixel_marked == 1)
                     {
                         index = (row * image_cols) + col;
                         temp_image[index] = 0;
                         run_again = 1;
+                        count++;
                     }
                 }        
 			}
@@ -230,6 +254,8 @@ void thinning(unsigned char *image, int image_rows, int image_cols)
 		{
 			thined_image[c1] = temp_image[c1];
 		}
+
+        printf("%d\n", count);
 	}
 
     save_image(thined_image, "thined_image.ppm", image_rows, image_cols);
