@@ -85,10 +85,6 @@ void get_transitions(unsigned char *image, int image_rows, int image_cols, int r
         {
             edge_to_nonedge++;
         }
-       /* if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
-        {
-            edge_to_nonedge++;
-        }*/
         if (current_pixel == EDGE)
         {
             edge_neighbors++;
@@ -107,10 +103,6 @@ void get_transitions(unsigned char *image, int image_rows, int image_cols, int r
         {
             edge_to_nonedge++;
         }
-       /* if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
-        {
-            edge_to_nonedge++;
-        }*/
         if (current_pixel == EDGE)
         {
             edge_neighbors++;
@@ -129,10 +121,6 @@ void get_transitions(unsigned char *image, int image_rows, int image_cols, int r
         {
             edge_to_nonedge++;
         }
-      /*  if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
-        {
-            edge_to_nonedge++;
-        }*/
         if (current_pixel == EDGE)
         {
             edge_neighbors++;
@@ -151,10 +139,6 @@ void get_transitions(unsigned char *image, int image_rows, int image_cols, int r
         {
             edge_to_nonedge++;
         }
-        /*if ((current_pixel == NOT_EDGE) && (next_pixel == EDGE))
-        {
-            edge_to_nonedge++;
-        }*/
         if (current_pixel == EDGE)
         {
             edge_neighbors++;
@@ -223,11 +207,9 @@ void thinning(unsigned char *image, int image_rows, int image_cols)
 		temp_image[c1] = image[c1];
 	}
 
-    int count = 0;
 	// Thinning Algorithm
 	while(run_again == 1)
 	{
-        count = 0;
         run_again = 0;
         is_pixel_marked = 0;
 
@@ -244,7 +226,6 @@ void thinning(unsigned char *image, int image_rows, int image_cols)
                         index = (row * image_cols) + col;
                         temp_image[index] = 0;
                         run_again = 1;
-                        count++;
                     }
                 }        
 			}
@@ -254,8 +235,6 @@ void thinning(unsigned char *image, int image_rows, int image_cols)
 		{
 			thined_image[c1] = temp_image[c1];
 		}
-
-        printf("%d\n", count);
 	}
 
     save_image(thined_image, "thined_image.ppm", image_rows, image_cols);
@@ -329,12 +308,12 @@ void roc(unsigned char *threshold_image, unsigned char *msf_image, int threshold
 int main(int argc, char *argv[])
 {
     // Variable Declaration Section
-    FILE *image_file, *template_file, *msf_file;
-    int IMAGE_ROWS, IMAGE_COLS, IMAGE_BYTES, TEMPLATE_ROWS, TEMPLATE_COLS, TEMPLATE_BYTES, MSF_ROWS, MSF_COLS, MSF_BYTES;
+    FILE *image_file; 
+    int IMAGE_ROWS, IMAGE_COLS, IMAGE_BYTES;
     char file_header[MAXLENGTH];
-    unsigned char *template_image;
+   // unsigned char *template_image;
     unsigned char *input_image;
-    unsigned char *msf_image;
+   // unsigned char *msf_image;
     unsigned char *original_image_with_threshold;
 
     /* CHECKT HAT THE USER ENTER THE CORRECT NUMBER OF PARAMETERS */
@@ -359,48 +338,14 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    template_file = fopen(argv[2], "rb");
-    if (template_file == NULL)
-    {
-        fclose(image_file);
-        printf("Error, could not read template image file\n");
-        exit(1);
-    }
-    fscanf(template_file, "%s %d %d %d", file_header, &TEMPLATE_COLS, &TEMPLATE_ROWS, &TEMPLATE_BYTES);
-    if ((strcmp(file_header, "P5") != 0) || (TEMPLATE_BYTES != 255))
-    {
-        fclose(image_file);
-        fclose(template_file);
-        printf("Error, not a greyscale 8-bit PPM image\n");
-        exit(1);
-    }
-
-	msf_file = fopen(argv[4], "rb");
-	if (msf_file == NULL)
-	{
-		fclose(image_file);
-		fclose(template_file);
-		printf("Error, could not read MSF image file\n");
-		exit(1);
-	}
-	fscanf(msf_file, "%s %d %d %d", file_header, &MSF_COLS, &MSF_ROWS, &MSF_BYTES);
-	if ((strcmp(file_header, "P5") != 0) || (MSF_BYTES != 255))
-	{
-		fclose(image_file);
-		fclose(template_file);
-		fclose(msf_file);
-		printf("Error, not a greyscale 8-bit PPM image\n");
-		exit(1);
-	}
-
-    /* ALLOCATE MEMORY AND READ IN INPUT AND TEMPLATE IMAGES */
+    /* ALLOCATE MEMORY AND READ IN INPUT IMAGE */
     input_image = read_in_image(IMAGE_ROWS, IMAGE_COLS, file_header, image_file);
-	template_image = read_in_image(TEMPLATE_ROWS, TEMPLATE_COLS, file_header, template_file);
-	msf_image = read_in_image(MSF_ROWS, MSF_COLS, file_header, msf_file);
 
     /* THRESHOLD ORIGINAL IMAGE AT VALUE 128 */
     original_image_with_threshold = original_image_threshold(input_image, IMAGE_ROWS, IMAGE_COLS);
+
     thinning(original_image_with_threshold, IMAGE_ROWS, IMAGE_COLS);
+    
     save_image(original_image_with_threshold, "original_128_threshold.ppm", IMAGE_ROWS, IMAGE_COLS);
     
     return 0;
