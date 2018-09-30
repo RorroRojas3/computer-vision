@@ -301,7 +301,7 @@ unsigned char *get_end_and_branch_points(unsigned char *image, int image_rows, i
 
     printf("Found Endpoints: %d | Found Brachpoints: %d\n", num_of_endp, num_of_branchp);
 
-    save_image(end_and_branch_point_image, "Endpoints and branchpoints.ppm", image_rows, image_cols);
+    save_image(end_and_branch_point_image, "endpoints and branchpoints.ppm", image_rows, image_cols);
     save_image(thinned_with_points, "thinned_with_points.ppm", image_rows, image_cols);
 
     return end_and_branch_point_image;
@@ -365,6 +365,7 @@ void roc(unsigned char *msf_image, unsigned char *end_and_branch_point_image, in
             end_points = 0;
             branch_points = 0;
             found = 0;
+            cols = cols - 1;
 
 		    for (row1 = rows - 7; row1 <= (rows + 7); row1++)
 		    {
@@ -493,7 +494,7 @@ int main(int argc, char *argv[])
     roc(msf_image, end_and_branch_points_image, MSF_ROWS, MSF_COLS, IMAGE_ROWS, IMAGE_COLS, argv[3]);
 
     /* SAVE IMAGES */
-    save_image(original_image_with_threshold, "original_128_threshold.ppm", IMAGE_ROWS, IMAGE_COLS);
+    save_image(original_image_with_threshold, "threshold_at128.ppm", IMAGE_ROWS, IMAGE_COLS);
     save_image(thinned_image, "thinned_image.ppm", IMAGE_ROWS, IMAGE_COLS);
     
     return 0;
