@@ -14,7 +14,8 @@ unsigned char *read_in_image(int rows, int cols, char file_header[], FILE *image
 	
 	image= (unsigned char *)calloc(rows * cols, sizeof(unsigned char));
 	
-	file_header[0] = fgetc(image_file);
+	//file_header[0] = fgetc(image_file);
+	//printf("%s ", file_header);
 	
 	fread(image, sizeof(unsigned char), rows * cols, image_file);
 	
@@ -365,7 +366,7 @@ void roc(unsigned char *msf_image, unsigned char *end_and_branch_point_image, in
             end_points = 0;
             branch_points = 0;
             found = 0;
-            cols = cols - 1;
+           // cols = cols - 1;
 
 		    for (row1 = rows - 7; row1 <= (rows + 7); row1++)
 		    {
