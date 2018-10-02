@@ -12,7 +12,7 @@ unsigned char *read_in_image(int rows, int cols, char file_header[], FILE *image
 	// Variable Declaration Section
 	unsigned char *image;
 	
-	image= (unsigned char *)calloc(rows * cols, sizeof(unsigned char));
+	image = (unsigned char *)calloc(rows * cols, sizeof(unsigned char));
 	
 	//file_header[0] = fgetc(image_file);
 	//printf("%s ", file_header);
@@ -154,7 +154,7 @@ void get_transitions(unsigned char *image, int image_rows, int image_cols, int r
 
     if (edge_to_nonedge == 1)
     {
-        if ((edge_neighbors >= 3) && (edge_neighbors <= 7))
+        if ((edge_neighbors >= 2) && (edge_neighbors <= 6))
         {
             if ((A == NOT_EDGE) || (B == NOT_EDGE) || ((C == NOT_EDGE) && (D == NOT_EDGE)))
             {
@@ -366,7 +366,7 @@ void roc(unsigned char *msf_image, unsigned char *end_and_branch_point_image, in
             end_points = 0;
             branch_points = 0;
             found = 0;
-           // cols = cols - 1;
+            //cols = cols - 1;
 
 		    for (row1 = rows - 7; row1 <= (rows + 7); row1++)
 		    {
