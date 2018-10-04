@@ -1,21 +1,20 @@
+// Library Declaration Section
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
+// Define Declaration Section
 #define MAXLENGTH 256
 #define EDGE 255
 #define NOT_EDGE 0
 
 /* READS IN IMAGE */
-unsigned char *read_in_image(int rows, int cols, char file_header[], FILE *image_file)
+unsigned char *read_in_image(int rows, int cols, FILE *image_file)
 {
 	// Variable Declaration Section
 	unsigned char *image;
 	
 	image = (unsigned char *)calloc(rows * cols, sizeof(unsigned char));
-	
-	//file_header[0] = fgetc(image_file);
-	//printf("%s ", file_header);
 	
 	fread(image, sizeof(unsigned char), rows * cols, image_file);
 	
@@ -48,7 +47,7 @@ unsigned char *original_image_threshold(unsigned char *original_image, int origi
 
     for (c1 = 0; c1 < (original_image_rows * original_image_cols); c1++)
     {
-        if (original_image[c1] < threshold)
+        if (original_image[c1] <= threshold)
         {
             output_threshold_image[c1] = 255;
         }
@@ -227,7 +226,8 @@ unsigned char *thinning(unsigned char *image, int image_rows, int image_cols)
                 if (thinned_image[index] == 255)
                 {
                     is_pixel_marked = 0;
-                    get_transitions(thinned_image, image_rows, image_cols, row, col, &is_pixel_marked, &end_points, &branch_points);
+                    get_transitions(thinned_image, image_rows, image_cols, row, 
+                    col, &is_pixel_marked, &end_points, &branch_points);
                     if (is_pixel_marked == 1)
                     {
                         index = (row * image_cols) + col;
@@ -281,6 +281,7 @@ unsigned char *get_end_and_branch_points(unsigned char *image, int image_rows, i
             index = (row * image_cols) + col;
             end_points = 0;
             branch_points = 0;
+
             if (image[index] == 255)
             {
                 get_transitions(image, image_rows, image_cols, row, col, &mark_pixel, &end_points, &branch_points);
@@ -302,7 +303,6 @@ unsigned char *get_end_and_branch_points(unsigned char *image, int image_rows, i
 
     printf("Found Endpoints: %d | Found Brachpoints: %d\n", num_of_endp, num_of_branchp);
 
-    save_image(end_and_branch_point_image, "endpoints and branchpoints.ppm", image_rows, image_cols);
     save_image(thinned_with_points, "thinned_with_points.ppm", image_rows, image_cols);
 
     return end_and_branch_point_image;
@@ -479,8 +479,8 @@ int main(int argc, char *argv[])
     }
 
     /* ALLOCATE MEMORY AND READ IN INPUT IMAGE */
-    input_image = read_in_image(IMAGE_ROWS, IMAGE_COLS, file_header, image_file);
-    msf_image = read_in_image(MSF_ROWS, MSF_COLS, file_header, msf_file);
+    input_image = read_in_image(IMAGE_ROWS, IMAGE_COLS, image_file);
+    msf_image = read_in_image(MSF_ROWS, MSF_COLS, msf_file);
 
     /* THRESHOLD ORIGINAL IMAGE AT VALUE 128 */
     original_image_with_threshold = original_image_threshold(input_image, IMAGE_ROWS, IMAGE_COLS);
@@ -497,6 +497,7 @@ int main(int argc, char *argv[])
     /* SAVE IMAGES */
     save_image(original_image_with_threshold, "threshold_at128.ppm", IMAGE_ROWS, IMAGE_COLS);
     save_image(thinned_image, "thinned_image.ppm", IMAGE_ROWS, IMAGE_COLS);
+    save_image(end_and_branch_points_image, "endpoints and branchpoints.ppm", IMAGE_ROWS, IMAGE_COLS);
     
     return 0;
 }
