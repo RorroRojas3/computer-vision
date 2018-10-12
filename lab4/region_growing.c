@@ -10,8 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
+#include <math.h>
 
 #define SQR(x) ((x)*(x))
+
 
 int main(int argc, char *argv[])
 {
