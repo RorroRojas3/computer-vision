@@ -77,9 +77,30 @@ void read_initial_countour(char *file_name, int **contour_rows, int **contour_co
 	fclose(file);
 }
 
-void draw_initial_contour(unsigned char *image, int image_rows, int image_cols)
+/* OUTPUTS INITIAL HAWK IMAGE WITH THE CONTOURS  */
+void draw_initial_contour(unsigned char *image, int image_rows, int image_cols, int **contour_cols, int **contour_rows, int *arr_length)
 {
-	
+	// Variable Declaration Section	
+	unsigned char *output_image;
+	int rows, cols;
+
+	output_image = (unsigned char *)calloc(image_rows * image_cols, sizeof(unsigned char));
+
+	// Draw "+" on image
+	for (i = 0; i < arr_length; i++)
+	{
+		rows = (*contour_rows)[i];
+		cols = (*contour_cols)[i];
+
+		for ()
+		{
+			for()
+			{
+				
+			}
+		}
+	}
+
 }
 
 
