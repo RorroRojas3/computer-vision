@@ -62,8 +62,8 @@ void read_initial_countour(char *file_name, int **contour_rows, int **contour_co
 	rewind(file);
 
 	// Allocates memory
-	*contour_rows = (int **)calloc(*file_size, sizeof(int *));
-	*contour_cols = (int **)calloc(*file_size, sizeof(int *));
+	*contour_rows = calloc(*file_size, sizeof(int *));
+	*contour_cols = calloc(*file_size, sizeof(int *));
 
 	// Extracts the columns and rows for the initial countour file
 	while((fscanf(file, "%d %d\n", &rows, &cols)) != EOF)
