@@ -118,6 +118,7 @@ void draw_initial_contour(unsigned char *image, int image_rows, int image_cols, 
 		output_image[(rows * image_cols) + (cols + 3)] = 0;
 	}
 	
+	// Saves image with initial contour labeled on them as a "+"
 	save_image(output_image, "hawk_initial_contour.ppm", image_rows, image_cols);
 }
 
