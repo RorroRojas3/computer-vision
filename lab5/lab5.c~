@@ -68,8 +68,8 @@ void read_initial_countour(char *file_name, int **contour_rows, int **contour_co
 	// Extracts the columns and rows for the initial countour file
 	while((fscanf(file, "%d %d\n", &rows, &cols)) != EOF)
 	{
-		(*contour_rows)[i] = rows;
 		(*contour_cols)[i] = cols;
+		(*contour_rows)[i] = rows;
 		i++;
 	}
 
