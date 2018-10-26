@@ -2,9 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 // Definition Section
 #define MAXLENGTH 256
+#define MAXITERATION 30
+#define NEWMIN 0
+#define NEWMAX 255
+#define SQUARE(x) ((x) * (x))
 
 /* READS IN IMAGE */
 unsigned char *read_in_image(int rows, int cols, FILE *image_file)
@@ -66,7 +71,7 @@ void read_initial_countour(char *file_name, int **contour_rows, int **contour_co
 	*contour_cols = calloc(*file_size, sizeof(int *));
 
 	// Extracts the columns and rows for the initial countour file
-	while((fscanf(file, "%d %d\n", &rows, &cols)) != EOF)
+	while((fscanf(file, "%d %d\n", &cols, &rows)) != EOF)
 	{
 		(*contour_rows)[i] = rows;
 		(*contour_cols)[i] = cols;
@@ -78,7 +83,7 @@ void read_initial_countour(char *file_name, int **contour_rows, int **contour_co
 }
 
 /* OUTPUTS INITIAL HAWK IMAGE WITH THE CONTOURS  */
-void draw_initial_contour(unsigned char *image, int image_rows, int image_cols, int **contour_cols, int **contour_rows, int arr_length)
+void draw_initial_contour(unsigned char *image, int image_rows, int image_cols, int **contour_rows, int **contour_cols, int arr_length)
 {
 	// Variable Declaration Section	
 	unsigned char *output_image;
@@ -120,8 +125,185 @@ void draw_initial_contour(unsigned char *image, int image_rows, int image_cols, 
 	
 	// Saves image with initial contour labeled on them as a "+"
 	save_image(output_image, "hawk_initial_contour.ppm", image_rows, image_cols);
+	
+	free(output_image);
 }
 
+/* CALCULATES THE MINIMUM AND MAXIMUM VALUE IN EACH PIXEL */
+void find_min_and_max(int *convolution_image, int image_rows, int image_cols, int *min, int *max)
+{
+	int i;
+	*min = convolution_image[0];
+	*max = convolution_image[0];
+	for (i = 1; i < (image_rows * image_cols); i++)
+	{
+		if (*min > convolution_image[i])
+		{
+			*min = convolution_image[i];
+		}
+		if (*max < convolution_image[i])
+		{
+			*max = convolution_image[i];
+		}
+	}
+}
+
+/* NORMALIZE INPUT IMAGE, RETURNS NORMALIZED IMAGE */
+unsigned char *normalize(int *convolution_image, int image_rows, int image_cols, int new_min, int new_max, int min, int max)
+{
+	// Variable Declaration Section
+	unsigned char *normalized_image;
+	int i;
+	
+	// Allocate memory
+	normalized_image = (unsigned char *)calloc(image_rows * image_cols, sizeof(unsigned char));
+	
+	for (i = 0; i < (image_rows * image_cols); i++)
+	{
+		normalized_image[i] = ((convolution_image[i] - min)*(new_max - new_min)/(max-min)) + new_min;
+	}
+	
+	return normalized_image;
+}
+
+/* OUTPUTS NORMALIZED SOBEL IMAGE AND RETURNS UN-NORMALIZED SOBEL IMAGE */
+int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
+{
+	// Variable Declaration Section
+	int *convolution_image;
+	unsigned char *normalized_image;
+	int i, j, rows, cols;
+	int index1 = 0;
+	int index2 = 0;
+	int x = 0;
+	int y = 0;
+	int min = 0;
+	int max = 0;
+
+	// X and Y KERNELS
+	int g_x[9] = 	{-1, 0, 1, 
+					-2, 0, 2, 
+					-1, 0, 1};
+
+	int g_y[9] = 	{-1, -2, -1
+					, 0, 0, 0, 
+					1, 2, 1};
+
+	// Allocate memory for image
+	convolution_image = (int *)calloc(image_rows * image_cols, sizeof(int));
+
+	// Copy original image
+	for (i = 0; i < (image_rows * image_cols); i++)
+	{
+		convolution_image[i] = image[i];
+	}
+
+	for (rows = 1; rows < (image_rows - 1); rows++)
+	{
+		for (cols = 1; cols < (image_cols - 1); cols++)
+		{
+			x = 0;
+			y = 0;
+			for (i = -1; i < 2; i++)
+			{
+				for (j = -1; j < 2; j++)
+				{
+					index1 = (image_cols * (rows + i)) + (cols + j);
+					index2 = 3*(i + 1) + (j + 1);
+					x += (image[index1] * g_x[index2]);
+					y += (image[index1] * g_y[index2]);
+				}
+			}
+			index1 = (image_cols * rows) + cols;
+			convolution_image[index1] = (int)sqrt(SQUARE(x) + SQUARE(y));
+		}
+	}
+
+	find_min_and_max(convolution_image, image_rows, image_cols, &min, &max);
+	
+	normalized_image = normalize(convolution_image, image_rows, image_cols, NEWMIN, NEWMAX, min, max);
+
+	save_image(normalized_image, "hawk_sobel_image.ppm", image_rows, image_cols);
+
+	free(normalized_image);
+
+	return convolution_image;
+}
+
+/* ACTIVE CONTOUR ALGORITHM APPLIED TO ORIGINAL IMAGE */
+void active_contour(unsigned char *image, int image_rows, int image_cols, int **contour_rows, int **contour_cols, int arr_length)
+{
+	// Variable Declaration Section
+	unsigned char *output_image;
+	int i, j, k, rows, cols;
+	int index = 0;
+	int average_distance_x = 0;
+	int average_distance_y = 0;
+	int *first_window;
+	int *second_window;
+
+	
+	// Allocate memory for image
+	output_image = (unsigned char *)calloc(image_rows * image_cols, sizeof(unsigned char));
+	first_window = (int *)calloc(49, sizeof(int));
+	second_window = (int *)calloc(49, sizeof(int));
+	
+	// Copy original image
+	for (i = 0; i < (image_rows * image_cols); i++)
+	{
+		output_image[i] = image[i];
+	}
+
+	for (i = 0; i < arr_length; i++)
+	{
+		rows = (*contour_rows)[0];
+		cols = (*contour_cols)[0];
+		index = 0;
+
+		// FIRST INTERNAL ENERGY CALCULATED 
+		for (j = rows - 3; j <= (rows + 3); j++)
+		{
+			for (k = (cols - 3); k <= (cols + 3); k++)
+			{
+				if ((i + 1) < arr_length)
+				{
+					first_window[index] = SQUARE((k - (*contour_cols)[i + 1])) + SQUARE((j - (*contour_rows)[i + 1])); 
+				}
+				else
+				{
+					first_window[index] = SQUARE((k - (*contour_cols)[0])) + SQUARE((j - (*contour_rows)[0])); 
+				}
+				/*if (i == 0)
+				{
+					printf("%d ", first_window[index]);
+				}*/
+				index++;
+			}
+			/*
+			if (i == 0)
+			{
+				printf("\n");
+			}*/
+		}
+
+		// SECOND INTERNAL ENERGY
+		if ((i + 1) < arr_length)
+		{
+			average_distance_x += cols;
+			average_distance_y += rows;
+		}
+		//printf("\n");
+	}
+
+	average_distance_x /= arr_length;
+	average_distance_y /= arr_length;
+	printf("X: %d, Y: %d\n", average_distance_x, average_distance_y);
+
+	free(first_window);
+	free(second_window);
+	free(output_image);
+	
+}
 
 int main(int argc, char *argv[])
 {
@@ -130,6 +312,7 @@ int main(int argc, char *argv[])
 	int IMAGE_ROWS, IMAGE_COLS, IMAGE_BYTES;
 	char file_header[MAXLENGTH];
 	unsigned char *input_image;
+	int *sobel_image;
 	int *contour_rows, *contour_cols;		
 	int file_size;
 
@@ -163,6 +346,18 @@ int main(int argc, char *argv[])
 	
 	/* DRAW INITIAL CONTOUR "+" ON INPUT IMAGE */
 	draw_initial_contour(input_image, IMAGE_ROWS, IMAGE_COLS, &contour_rows, &contour_cols, file_size);
-
+	
+	/* UN-NORMALIZED SOBEL IMAGE */
+	sobel_image = sobel_edge_detector(input_image, IMAGE_ROWS, IMAGE_COLS);
+	
+	/* CONTOUR ALGORITHM */
+	active_contour(input_image, IMAGE_ROWS, IMAGE_COLS, &contour_rows, &contour_cols, file_size);
+	
+	/* FREE ALLOCATED MEMORY */
+	free(input_image);
+	free(sobel_image);
+	free(contour_rows);
+	free(contour_cols);
+	
 	return 0;
 }
