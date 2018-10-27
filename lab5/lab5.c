@@ -390,7 +390,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 		
 	}
 
-	// Calculates second Internal Energy
+	// DRAWS CONTOUR WITH FINAL POINTS
 	draw_contour(image, image_rows, image_cols, contour_rows, contour_cols, arr_length, "after_10.ppm");
 
 	free(first_window);
