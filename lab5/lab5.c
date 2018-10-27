@@ -318,6 +318,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 				}
 			}
 
+			// FINDS MINIMUM AND MAXIMUM VALUES OF EACH ENERGY AND NORMALIZES TO VALUE OF 0 AND 1
 			find_min_and_max(first_window, 7, 7, &min, &max);
 			first_window_normalized = normalize(first_window, 7, 7, new_min, new_max, min, max);
 			find_min_and_max(second_window, 7, 7, &min, &max);
@@ -325,16 +326,18 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			find_min_and_max(third_window, 7, 7, &min, &max);
 			third_window_normalized = normalize(third_window, 7, 7, new_min, new_max, min, max);
 
-
+			// CALCULATES THE ENERGY 
 			for (j = 0; j < 49; j++)
 			{
 				sum_window[j] = first_window_normalized[j] + second_window_normalized[j] + third_window_normalized[j];
 			}
 
+			// FREES MEMORY
 			free(first_window_normalized);
 			free(second_window_normalized);
 			free(third_window_normalized);
 
+			// DETERMINES THE LOWEST VALUE FOR NEW POINTS
 			min = sum_window[0];
 			for (j = 1; j < 49; j++)
 			{
@@ -345,8 +348,8 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 				}
 			}
 
+			// DETERMINES ROW AND COLUMN FOR NEW POINT BASED ON INDEX
 			index2 = (index / 7); // row
-
 			if (index2 < 3)
 			{
 				temp = ((*contour_rows)[i] - abs(index2 - 3));
@@ -378,6 +381,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			}
 		}
 
+		// SETS NEW POINTS
 		for (i = 0; i < arr_length; i++)
 		{
 			(*contour_cols)[i] = new_x[i];
