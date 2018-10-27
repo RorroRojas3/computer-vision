@@ -267,18 +267,25 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 		output_image[i] = image[i];
 	}
 
-	for (i = 0; i < arr_length; i++)
-	{
-		average_distance_x += (*contour_cols)[i];
-		average_distance_y += (*contour_rows)[i];
-	}
-
-	average_distance_x /= arr_length;
-	average_distance_y /= arr_length;
 
 	// Calculates first Internal Energy
-	for (l = 0;  l < 10; l++)
+	for (l = 0;  l < 30; l++)
 	{
+
+		average_distance_x = 0;
+		average_distance_y = 0;
+
+		for (i = 0; i < arr_length; i++)
+		{
+			average_distance_x += (*contour_cols)[i];
+			average_distance_y += (*contour_rows)[i];
+			new_x[i] = 0;
+			new_y[i] = 0;
+		}
+
+		average_distance_x /= arr_length;
+		average_distance_y /= arr_length;
+
 		for (i = 0; i < arr_length; i++)
 		{
 			rows = (*contour_rows)[0];
@@ -286,7 +293,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			index = 0;
 
 			// FIRST AND SECOND INTERNAL ENERGY AND EXTERNAL ENERGY CALCULATED 
-			for (j = rows - 3; j <= (rows + 3); j++)
+			for (j = (rows - 3); j <= (rows + 3); j++)
 			{
 				for (k = (cols - 3); k <= (cols + 3); k++)
 				{
@@ -294,7 +301,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 					{
 						first_window[index] = SQUARE((k - (*contour_cols)[i + 1])) + SQUARE((j - (*contour_rows)[i + 1])); 
 						second_window[index] = 	SQUARE((k - (*contour_cols)[i + 1] - average_distance_x)) + 
-												SQUARE((k - (*contour_rows)[i + 1] - average_distance_y));
+												SQUARE((j - (*contour_rows)[i + 1] - average_distance_y));
 						index2 = (j * image_cols) + k;
 						third_window[index] = SQUARE(sobel_image[index2]);
 					}
@@ -302,7 +309,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 					{
 						first_window[index] = SQUARE((k - (*contour_cols)[0])) + SQUARE((j - (*contour_rows)[0])); 
 						second_window[index] = 	SQUARE((k - (*contour_cols)[0] - average_distance_x)) + 
-												SQUARE((k - (*contour_rows)[0] - average_distance_y));
+												SQUARE((j - (*contour_rows)[0] - average_distance_y));
 						index2 = (j * image_cols) + k;
 						third_window[index] = SQUARE(sobel_image[index2]);
 					}
@@ -347,21 +354,21 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			}
 			else
 			{
-				new_x[i] = (*contour_cols[i]);
+				new_x[i] = (*contour_cols)[i];
 				new_y[i] = index2 * image_cols;
 			}
 		}
 
-		for (j = 0; j < arr_length; j++)
+		for (i = 0; i < arr_length; i++)
 		{
-			(*contour_cols)[i] = new_x[j];
-			(*contour_rows)[i] = new_y[j];
+			(*contour_cols)[i] = new_x[i];
+			(*contour_rows)[i] = new_y[i];
 		}
 		
 	}
 
 	// Calculates second Internal Energy
-
+	draw_contour(image, image_rows, image_cols, contour_rows, contour_cols, arr_length, "after_10.ppm");
 
 	free(first_window);
 	free(second_window);
