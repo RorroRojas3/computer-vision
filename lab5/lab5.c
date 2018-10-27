@@ -83,7 +83,7 @@ void read_initial_countour(char *file_name, int **contour_rows, int **contour_co
 }
 
 /* OUTPUTS INITIAL HAWK IMAGE WITH THE CONTOURS  */
-void draw_initial_contour(unsigned char *image, int image_rows, int image_cols, int **contour_rows, int **contour_cols, int arr_length)
+void draw_contour(unsigned char *image, int image_rows, int image_cols, int **contour_rows, int **contour_cols, int arr_length, char *file_name)
 {
 	// Variable Declaration Section	
 	unsigned char *output_image;
@@ -124,7 +124,7 @@ void draw_initial_contour(unsigned char *image, int image_rows, int image_cols, 
 	}
 	
 	// Saves image with initial contour labeled on them as a "+"
-	save_image(output_image, "hawk_initial_contour.ppm", image_rows, image_cols);
+	save_image(output_image, file_name, image_rows, image_cols);
 	
 	free(output_image);
 }
@@ -198,6 +198,7 @@ int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 		convolution_image[i] = image[i];
 	}
 
+	// Convolute image with X and Y gradients 
 	for (rows = 1; rows < (image_rows - 1); rows++)
 	{
 		for (cols = 1; cols < (image_cols - 1); cols++)
@@ -219,34 +220,46 @@ int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 		}
 	}
 
+	// Find minmimum and maximum values of convoluted image
 	find_min_and_max(convolution_image, image_rows, image_cols, &min, &max);
 	
+	// Normalize image for visual purposes
 	normalized_image = normalize(convolution_image, image_rows, image_cols, NEWMIN, NEWMAX, min, max);
 
 	save_image(normalized_image, "hawk_sobel_image.ppm", image_rows, image_cols);
-
 	free(normalized_image);
 
 	return convolution_image;
 }
 
 /* ACTIVE CONTOUR ALGORITHM APPLIED TO ORIGINAL IMAGE */
-void active_contour(unsigned char *image, int image_rows, int image_cols, int **contour_rows, int **contour_cols, int arr_length)
+void active_contour(unsigned char *image, int *sobel_image, int image_rows, int image_cols, int **contour_rows, int **contour_cols, int arr_length)
 {
 	// Variable Declaration Section
-	unsigned char *output_image;
-	int i, j, k, rows, cols;
+	unsigned char *output_image, *first_window_normalized, *second_window_normalized, *third_window_normalized;
+	int i, j, k, l, rows, cols;
 	int index = 0;
+	int index2 = 0;
+	int index3 = 0;
 	int average_distance_x = 0;
 	int average_distance_y = 0;
 	int *first_window;
 	int *second_window;
+	int *third_window;
+	int *sum_window;
+	int min, max, new_min, new_max;
+	int new_x[arr_length];
+	int new_y[arr_length];
+	new_min = 0;
+	new_max = 1;
 
 	
 	// Allocate memory for image
 	output_image = (unsigned char *)calloc(image_rows * image_cols, sizeof(unsigned char));
 	first_window = (int *)calloc(49, sizeof(int));
 	second_window = (int *)calloc(49, sizeof(int));
+	third_window = (int *)calloc(49, sizeof(int));
+	sum_window = (int *)calloc(49, sizeof(int));
 	
 	// Copy original image
 	for (i = 0; i < (image_rows * image_cols); i++)
@@ -256,48 +269,99 @@ void active_contour(unsigned char *image, int image_rows, int image_cols, int **
 
 	for (i = 0; i < arr_length; i++)
 	{
-		rows = (*contour_rows)[0];
-		cols = (*contour_cols)[0];
-		index = 0;
-
-		// FIRST INTERNAL ENERGY CALCULATED 
-		for (j = rows - 3; j <= (rows + 3); j++)
-		{
-			for (k = (cols - 3); k <= (cols + 3); k++)
-			{
-				if ((i + 1) < arr_length)
-				{
-					first_window[index] = SQUARE((k - (*contour_cols)[i + 1])) + SQUARE((j - (*contour_rows)[i + 1])); 
-				}
-				else
-				{
-					first_window[index] = SQUARE((k - (*contour_cols)[0])) + SQUARE((j - (*contour_rows)[0])); 
-				}
-				/*if (i == 0)
-				{
-					printf("%d ", first_window[index]);
-				}*/
-				index++;
-			}
-			/*
-			if (i == 0)
-			{
-				printf("\n");
-			}*/
-		}
-
-		// SECOND INTERNAL ENERGY
-		if ((i + 1) < arr_length)
-		{
-			average_distance_x += cols;
-			average_distance_y += rows;
-		}
-		//printf("\n");
+		average_distance_x += (*contour_cols)[i];
+		average_distance_y += (*contour_rows)[i];
 	}
 
 	average_distance_x /= arr_length;
 	average_distance_y /= arr_length;
-	printf("X: %d, Y: %d\n", average_distance_x, average_distance_y);
+
+	// Calculates first Internal Energy
+	for (l = 0;  l < 10; l++)
+	{
+		for (i = 0; i < arr_length; i++)
+		{
+			rows = (*contour_rows)[0];
+			cols = (*contour_cols)[0];
+			index = 0;
+
+			// FIRST AND SECOND INTERNAL ENERGY AND EXTERNAL ENERGY CALCULATED 
+			for (j = rows - 3; j <= (rows + 3); j++)
+			{
+				for (k = (cols - 3); k <= (cols + 3); k++)
+				{
+					if ((i + 1) < arr_length)
+					{
+						first_window[index] = SQUARE((k - (*contour_cols)[i + 1])) + SQUARE((j - (*contour_rows)[i + 1])); 
+						second_window[index] = 	SQUARE((k - (*contour_cols)[i + 1] - average_distance_x)) + 
+												SQUARE((k - (*contour_rows)[i + 1] - average_distance_y));
+						index2 = (j * image_cols) + k;
+						third_window[index] = SQUARE(sobel_image[index2]);
+					}
+					else
+					{
+						first_window[index] = SQUARE((k - (*contour_cols)[0])) + SQUARE((j - (*contour_rows)[0])); 
+						second_window[index] = 	SQUARE((k - (*contour_cols)[0] - average_distance_x)) + 
+												SQUARE((k - (*contour_rows)[0] - average_distance_y));
+						index2 = (j * image_cols) + k;
+						third_window[index] = SQUARE(sobel_image[index2]);
+					}
+					index++;
+				}
+			}
+
+			find_min_and_max(first_window, 7, 7, &min, &max);
+			first_window_normalized = normalize(first_window, 7, 7, new_min, new_max, min, max);
+			find_min_and_max(second_window, 7, 7, &min, &max);
+			second_window_normalized = normalize(second_window, 7, 7, new_min, new_max, min, max);
+			find_min_and_max(second_window, 7, 7, &min, &max);
+			third_window_normalized = normalize(third_window, 7, 7, new_min, new_max, min, max);
+
+
+			for (j = 0; j < 49; j++)
+			{
+				sum_window[j] = first_window_normalized[j] + second_window_normalized[j] + third_window_normalized[j];
+			}
+
+			min = sum_window[0];
+			for (j = 1; j < 49; j++)
+			{
+				if (min > sum_window[j])
+				{
+					min = sum_window[j];
+					index = j;
+				}
+			}
+
+			index2 = (index / 7); // row
+			index3 = (index % 7); // col
+			if (index3 < 3)
+			{
+				new_x[i] = (*contour_cols)[i] - index3;
+				new_y[i] = index2 * image_cols;
+			}
+			else if (index3 > 3)
+			{
+				new_x[i] = (*contour_cols)[i] + index3;
+				new_y[i] = index2 * image_cols;
+			}
+			else
+			{
+				new_x[i] = (*contour_cols[i]);
+				new_y[i] = index2 * image_cols;
+			}
+		}
+
+		for (j = 0; j < arr_length; j++)
+		{
+			(*contour_cols)[i] = new_x[j];
+			(*contour_rows)[i] = new_y[j];
+		}
+		
+	}
+
+	// Calculates second Internal Energy
+
 
 	free(first_window);
 	free(second_window);
@@ -345,13 +409,13 @@ int main(int argc, char *argv[])
 	read_initial_countour(argv[2], &contour_rows, &contour_cols, &file_size);
 	
 	/* DRAW INITIAL CONTOUR "+" ON INPUT IMAGE */
-	draw_initial_contour(input_image, IMAGE_ROWS, IMAGE_COLS, &contour_rows, &contour_cols, file_size);
+	draw_contour(input_image, IMAGE_ROWS, IMAGE_COLS, &contour_rows, &contour_cols, file_size, "hawk_initial_contour.ppm");
 	
 	/* UN-NORMALIZED SOBEL IMAGE */
 	sobel_image = sobel_edge_detector(input_image, IMAGE_ROWS, IMAGE_COLS);
 	
 	/* CONTOUR ALGORITHM */
-	active_contour(input_image, IMAGE_ROWS, IMAGE_COLS, &contour_rows, &contour_cols, file_size);
+	active_contour(input_image, sobel_image, IMAGE_ROWS, IMAGE_COLS, &contour_rows, &contour_cols, file_size);
 	
 	/* FREE ALLOCATED MEMORY */
 	free(input_image);
