@@ -6,7 +6,7 @@
 
 // Definition Section
 #define MAXLENGTH 256
-#define MAXITERATION 29
+#define MAXITERATION 20
 #define NEWMIN 0
 #define NEWMAX 255
 #define SQUARE(x) ((x) * (x))
@@ -346,9 +346,10 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 
 			// DETERMINES THE LOWEST VALUE FOR NEW POINTS
 			min = sum_window[0];
+			index = 0;
 			for (j = 1; j < 49; j++)
 			{
-				if (min > sum_window[j])
+				if (min < sum_window[j])
 				{
 					min = sum_window[j];
 					index = j;
