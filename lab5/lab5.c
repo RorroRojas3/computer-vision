@@ -6,7 +6,7 @@
 
 // Definition Section
 #define MAXLENGTH 256
-#define MAXITERATION 1
+#define MAXITERATION 20
 #define NEWMIN 0
 #define NEWMAX 255
 #define SQUARE(x) ((x) * (x))
@@ -334,10 +334,8 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			new_y[i] = 0;
 		}
 
-		average_distance_x /= (float)arr_length;
-		average_distance_y /= (float)arr_length;
-
-		printf("%.7f %.7f\n", average_distance_x, average_distance_y);
+		average_distance_x /= arr_length;
+		average_distance_y /= arr_length;
 
 		for (i = 0; i < arr_length; i++)
 		{
@@ -382,7 +380,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			for (j = 0; j < 49; j++)
 			{
 				sum_window[j] = first_window_normalized[j] + second_window_normalized[j] + third_window_normalized[j];
-				if (i == 0)
+				/* if (i == 0)
 				{
 					if (j % 7 == 0)
 					{
@@ -390,7 +388,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 					}
 					printf("%.7f ", second_window_normalized[j]);
 					
-				}
+				} */
 				
 			}
 
