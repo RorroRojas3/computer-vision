@@ -6,7 +6,7 @@
 
 // Definition Section
 #define MAXLENGTH 256
-#define MAXITERATION 1
+#define MAXITERATION 30
 #define NEWMIN 0
 #define NEWMAX 255
 #define SQUARE(x) ((x) * (x))
@@ -258,7 +258,7 @@ int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 				}
 			}
 			index1 = (image_cols * rows) + cols;
-			convolution_image[index1] = (int)sqrt(SQUARE(x) + SQUARE(y));
+			convolution_image[index1] = sqrt((SQUARE(x) + SQUARE(y)));
 		}
 	}
 
@@ -267,7 +267,6 @@ int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 	
 	// Normalize image for visual purposes
 	normalized_image = normalize_unsigned_char(convolution_image, image_rows, image_cols, NEWMIN, NEWMAX, min, max);
-
 	save_image(normalized_image, "hawk_sobel_image.ppm", image_rows, image_cols);
 	
 	free(normalized_image);
@@ -284,11 +283,12 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 	float *first_internal_energy;
 	float *second_internal_energy;
 	float *external_energy;
-	float *sum_window;
+	float *sum_energies;
 	float min, max, new_min, new_max;
 	float *first_internal_energy_normalized, *second_internal_energy_normalized, *external_energy_normalized;
 	float average_distance_x = 0;
 	float average_distance_y = 0;
+	float average_distance = 0;
 	int i, j, k, l, rows, cols;
 	int index = 0;
 	int index2 = 0;
@@ -306,7 +306,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 	first_internal_energy = (float *)calloc(49, sizeof(float));
 	second_internal_energy = (float *)calloc(49, sizeof(float));
 	external_energy = (float *)calloc(49, sizeof(float));
-	sum_window = (float *)calloc(49, sizeof(float));
+	sum_energies = (float *)calloc(49, sizeof(float));
 
 	// Find minmimum and maximum values of convoluted image
 	find_min_and_max_int(sobel_image, image_rows, image_cols, &min1, &max1);
@@ -330,11 +330,12 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 
 
 	// Calculates first Internal Energy
-	for (l = 0;  l < MAXITERATION; l++)
+	for (l = 0; l < MAXITERATION; l++)
 	{
 
 		average_distance_x = 0.0;
 		average_distance_y = 0.0;
+		average_distance = 0.0;
 
 		for (i = 0; i < arr_length; i++)
 		{
@@ -348,12 +349,14 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 				average_distance_x += SQUARE((*contour_cols)[i] - (*contour_cols)[0]);
 				average_distance_y += SQUARE((*contour_rows)[i] - (*contour_rows)[0]);
 			}
+			average_distance = average_distance_x + average_distance_y;
 			new_x[i] = 0;
 			new_y[i] = 0;
 		}
 
 		average_distance_x /= arr_length;
 		average_distance_y /= arr_length;
+		average_distance /= arr_length;
 
 		for (i = 0; i < arr_length; i++)
 		{
@@ -369,18 +372,16 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 					if ((i + 1) < arr_length)
 					{
 						first_internal_energy[index] = SQUARE(k - (*contour_cols)[i + 1]) + SQUARE(j - (*contour_rows)[i + 1]); 
-						second_internal_energy[index] = 	SQUARE(SQUARE(k - (*contour_cols)[i + 1]) - average_distance_x) + 
-												SQUARE(SQUARE(j - (*contour_rows)[i + 1]) - average_distance_y);
+						second_internal_energy[index] = SQUARE(first_internal_energy[index] - average_distance); 
 						index2 = (j * image_cols) + k;
-						external_energy[index] = SQUARE(sobel_image[index2]);
+						external_energy[index] = SQUARE(temp_image[index2]);
 					}
 					else
 					{
 						first_internal_energy[index] = SQUARE(k - (*contour_cols)[0]) + SQUARE(j - (*contour_rows)[0]); 
-						second_internal_energy[index] = 	SQUARE(SQUARE(k - (*contour_cols)[0]) - average_distance_x) + 
-												SQUARE(SQUARE(j - (*contour_rows)[0]) - average_distance_y);
+						second_internal_energy[index] = SQUARE(first_internal_energy[index] - average_distance); 
 						index2 = (j * image_cols) + k;
-						external_energy[index] = SQUARE((sobel_image[index2]));
+						external_energy[index] = SQUARE(temp_image[index2]);
 						
 					}
 					index++;
@@ -398,17 +399,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			// CALCULATES THE ENERGY 
 			for (j = 0; j < 49; j++)
 			{
-				sum_window[j] = first_internal_energy_normalized[j] + second_internal_energy_normalized[j] + external_energy_normalized[j];
-				if (i == 0)
-				{
-					if (j % WINDOWSIZE == 0)
-					{
-						printf("\n");
-					}
-					printf("%.7f ", second_internal_energy_normalized[j]);
-					
-				}
-				
+				sum_energies[j] = first_internal_energy_normalized[j] + second_internal_energy_normalized[j] + external_energy_normalized[j];
 			}
 
 			// FREES MEMORY
@@ -417,18 +408,19 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			free(external_energy_normalized);
 
 			// DETERMINES THE LOWEST VALUE FOR NEW POINTS
-			min = sum_window[0];
+			min = sum_energies[0];
 			index = 0;
-			for (j = 1; j < 49; j++)
+			for (j = 0; j < 49; j++)
 			{
-				if (min > sum_window[j])
+				if (min > sum_energies[j])
 				{
-					min = sum_window[j];
+					min = sum_energies[j];
 					index = j;
 				}
 			}
 
 			// DETERMINES ROW AND COLUMN FOR NEW POINT BASED ON INDEX
+			temp = 0;
 			index2 = (index / WINDOWSIZE); // row
 			if (index2 < 3)
 			{
@@ -437,13 +429,14 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			}
 			else if (index2 > 3)
 			{
-				temp = (*contour_rows)[i] + (index2 - 3);
+				temp = (*contour_rows)[i] + abs(index2 - 3);
 				new_y[i]  = temp;
 			}
 			else
 			{
 				new_y[i] = (*contour_rows)[i];
 			}
+			
 
 			index3 = (index % WINDOWSIZE); // col
 			if (index3 < 3)
@@ -453,7 +446,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			}
 			else if (index3 > 3)
 			{
-				new_x[i] = (*contour_cols)[i] + (index3 - 3);
+				new_x[i] = (*contour_cols)[i] + abs(index3 - 3);
 			}
 			else
 			{
@@ -476,7 +469,8 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 	free(first_internal_energy);
 	free(second_internal_energy);
 	free(external_energy);
-	free(sum_window);
+	free(temp_image);
+	free(sum_energies);
 	free(output_image);
 	
 }
