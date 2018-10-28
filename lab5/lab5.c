@@ -6,7 +6,7 @@
 
 // Definition Section
 #define MAXLENGTH 256
-#define MAXITERATION 30
+#define MAXITERATION 1
 #define NEWMIN 0
 #define NEWMAX 255
 #define SQUARE(x) ((x) * (x))
@@ -309,15 +309,18 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 	sum_window = (float *)calloc(49, sizeof(float));
 
 	// Find minmimum and maximum values of convoluted image
-			find_min_and_max_int(sobel_image, image_rows, image_cols, &min1, &max1);
-	
-			// Normalize image for visual purposes
-			temp_image = normalize_unsigned_char(sobel_image, image_rows, image_cols, NEWMIN, NEWMAX, min1, max1);
+	find_min_and_max_int(sobel_image, image_rows, image_cols, &min1, &max1);
 
-			for ( i = 0; i < (image_rows * image_cols); i++)
-			{
-				temp_image[i] = 255 - temp_image[i];
-			}
+	// Normalize image for visual purposes
+	temp_image = normalize_unsigned_char(sobel_image, image_rows, image_cols, NEWMIN, NEWMAX, min1, max1);
+
+
+	for ( i = 0; i < (image_rows * image_cols); i++)
+	{
+		temp_image[i] = 255 - temp_image[i];
+	}
+
+	save_image(temp_image, "inverted_hawk.ppm", image_rows, image_cols);
 	
 	// Copy original image
 	for (i = 0; i < (image_rows * image_cols); i++)
@@ -369,7 +372,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 						second_internal_energy[index] = 	SQUARE(SQUARE(k - (*contour_cols)[i + 1]) - average_distance_x) + 
 												SQUARE(SQUARE(j - (*contour_rows)[i + 1]) - average_distance_y);
 						index2 = (j * image_cols) + k;
-						external_energy[index] = SQUARE(temp_image[index2]);
+						external_energy[index] = SQUARE(sobel_image[index2]);
 					}
 					else
 					{
@@ -377,7 +380,8 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 						second_internal_energy[index] = 	SQUARE(SQUARE(k - (*contour_cols)[0]) - average_distance_x) + 
 												SQUARE(SQUARE(j - (*contour_rows)[0]) - average_distance_y);
 						index2 = (j * image_cols) + k;
-						external_energy[index] = SQUARE((temp_image[index2]));
+						external_energy[index] = SQUARE((sobel_image[index2]));
+						
 					}
 					index++;
 				}
@@ -401,7 +405,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 					{
 						printf("\n");
 					}
-					printf("%.7f ", external_energy_normalized[j]);
+					printf("%.7f ", second_internal_energy_normalized[j]);
 					
 				}
 				
