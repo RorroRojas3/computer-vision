@@ -6,7 +6,7 @@
 
 // Definition Section
 #define MAXLENGTH 256
-#define MAXITERATION 20
+#define MAXITERATION 1
 #define NEWMIN 0
 #define NEWMAX 255
 #define SQUARE(x) ((x) * (x))
@@ -130,7 +130,7 @@ void draw_contour(unsigned char *image, int image_rows, int image_cols, int **co
 }
 
 /* CALCULATES THE MINIMUM AND MAXIMUM VALUE IN EACH PIXEL */
-void find_min_and_max(int *convolution_image, int image_rows, int image_cols, int *min, int *max)
+void find_min_and_max_int(int *convolution_image, int image_rows, int image_cols, int *min, int *max)
 {
 	int i;
 	*min = convolution_image[0];
@@ -148,8 +148,26 @@ void find_min_and_max(int *convolution_image, int image_rows, int image_cols, in
 	}
 }
 
-/* NORMALIZE INPUT IMAGE, RETURNS NORMALIZED IMAGE */
-unsigned char *normalize(int *convolution_image, int image_rows, int image_cols, int new_min, int new_max, int min, int max)
+void find_min_and_max_float(float *convolution_image, int image_rows, int image_cols, float *min, float *max)
+{
+	int i;
+	*min = convolution_image[0];
+	*max = convolution_image[0];
+	for (i = 1; i < (image_rows * image_cols); i++)
+	{
+		if (*min > convolution_image[i])
+		{
+			*min = convolution_image[i];
+		}
+		if (*max < convolution_image[i])
+		{
+			*max = convolution_image[i];
+		}
+	}
+}
+
+/* NORMALIZE UNSIGNED CHAR INPUT IMAGE, RETURNS NORMALIZED IMAGE */
+unsigned char *normalize_unsigned_char(int *convolution_image, int image_rows, int image_cols, int new_min, int new_max, int min, int max)
 {
 	// Variable Declaration Section
 	unsigned char *normalized_image;
@@ -170,6 +188,22 @@ unsigned char *normalize(int *convolution_image, int image_rows, int image_cols,
 		}
 	}
 	
+	return normalized_image;
+}
+
+/* 	NORMALIZE FLOAT INPUT IMAGE, RETURNS NORMALIZED IMAGE */
+float *normalize_float(float *convolution_image, int image_rows, int image_cols, float new_min, float new_max, float min, float max)
+{
+	float *normalized_image;
+	int i;
+
+	normalized_image = (float *)calloc(image_rows * image_cols, sizeof(float));
+
+	for (i = 0; i < (image_rows * image_cols); i++)
+	{
+		normalized_image[i] = ((convolution_image[i] - min)*(new_max - new_min)/(max-min)) + new_min;
+	}
+
 	return normalized_image;
 }
 
@@ -228,10 +262,10 @@ int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 	}
 
 	// Find minmimum and maximum values of convoluted image
-	find_min_and_max(convolution_image, image_rows, image_cols, &min, &max);
+	find_min_and_max_int(convolution_image, image_rows, image_cols, &min, &max);
 	
 	// Normalize image for visual purposes
-	normalized_image = normalize(convolution_image, image_rows, image_cols, NEWMIN, NEWMAX, min, max);
+	normalized_image = normalize_unsigned_char(convolution_image, image_rows, image_cols, NEWMIN, NEWMAX, min, max);
 
 	save_image(normalized_image, "hawk_sobel_image.ppm", image_rows, image_cols);
 	free(normalized_image);
@@ -243,31 +277,32 @@ int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 void active_contour(unsigned char *image, int *sobel_image, int image_rows, int image_cols, int **contour_rows, int **contour_cols, int arr_length)
 {
 	// Variable Declaration Section
-	unsigned char *output_image, *first_window_normalized, *second_window_normalized, *third_window_normalized;
+	unsigned char *output_image;
+	float *first_window;
+	float *second_window;
+	float *third_window;
+	float *sum_window;
+	float min, max, new_min, new_max;
+	float *first_window_normalized, *second_window_normalized, *third_window_normalized;
+	float average_distance_x = 0;
+	float average_distance_y = 0;
 	int i, j, k, l, rows, cols;
 	int index = 0;
 	int index2 = 0;
 	int index3 = 0;
-	int average_distance_x = 0;
-	int average_distance_y = 0;
-	int *first_window;
-	int *second_window;
-	int *third_window;
-	int *sum_window;
-	int min, max, new_min, new_max;
 	int new_x[arr_length];
 	int new_y[arr_length];
 	int temp = 0;
-	new_min = 0;
-	new_max = 1;
+	new_min = 0.0;
+	new_max = 1.0;
 
 	
 	// Allocate memory for image
 	output_image = (unsigned char *)calloc(image_rows * image_cols, sizeof(unsigned char));
-	first_window = (int *)calloc(49, sizeof(int));
-	second_window = (int *)calloc(49, sizeof(int));
-	third_window = (int *)calloc(49, sizeof(int));
-	sum_window = (int *)calloc(49, sizeof(int));
+	first_window = (float *)calloc(49, sizeof(float));
+	second_window = (float *)calloc(49, sizeof(float));
+	third_window = (float *)calloc(49, sizeof(float));
+	sum_window = (float *)calloc(49, sizeof(float));
 	
 	// Copy original image
 	for (i = 0; i < (image_rows * image_cols); i++)
@@ -280,19 +315,29 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 	for (l = 0;  l < MAXITERATION; l++)
 	{
 
-		average_distance_x = 0;
-		average_distance_y = 0;
+		average_distance_x = 0.0;
+		average_distance_y = 0.0;
 
 		for (i = 0; i < arr_length; i++)
 		{
-			average_distance_x += (*contour_cols)[i];
-			average_distance_y += (*contour_rows)[i];
+			if ((i + 1) < arr_length)
+			{
+				average_distance_x += SQUARE((*contour_cols)[i] - (*contour_cols)[i + 1]);
+				average_distance_y += SQUARE((*contour_rows)[i] - (*contour_rows)[i + 1]);
+			}
+			else
+			{
+				average_distance_x += SQUARE((*contour_cols)[i] - (*contour_cols)[0]);
+				average_distance_y += SQUARE((*contour_rows)[i] - (*contour_rows)[0]);
+			}
 			new_x[i] = 0;
 			new_y[i] = 0;
 		}
 
-		average_distance_x /= arr_length;
-		average_distance_y /= arr_length;
+		average_distance_x /= (float)arr_length;
+		average_distance_y /= (float)arr_length;
+
+		printf("%.7f %.7f\n", average_distance_x, average_distance_y);
 
 		for (i = 0; i < arr_length; i++)
 		{
@@ -326,17 +371,27 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			}
 
 			// FINDS MINIMUM AND MAXIMUM VALUES OF EACH ENERGY AND NORMALIZES TO VALUE OF 0 AND 1
-			find_min_and_max(first_window, 7, 7, &min, &max);
-			first_window_normalized = normalize(first_window, 7, 7, new_min, new_max, min, max);
-			find_min_and_max(second_window, 7, 7, &min, &max);
-			second_window_normalized = normalize(second_window, 7, 7, new_min, new_max, min, max);
-			find_min_and_max(third_window, 7, 7, &min, &max);
-			third_window_normalized = normalize(third_window, 7, 7, new_min, new_max, min, max);
+			find_min_and_max_float(first_window, 7, 7, &min, &max);
+			first_window_normalized = normalize_float(first_window, 7, 7, new_min, new_max, min, max);
+			find_min_and_max_float(second_window, 7, 7, &min, &max);
+			second_window_normalized = normalize_float(second_window, 7, 7, new_min, new_max, min, max);
+			find_min_and_max_float(third_window, 7, 7, &min, &max);
+			third_window_normalized = normalize_float(third_window, 7, 7, new_min, new_max, min, max);
 
 			// CALCULATES THE ENERGY 
 			for (j = 0; j < 49; j++)
 			{
 				sum_window[j] = first_window_normalized[j] + second_window_normalized[j] + third_window_normalized[j];
+				if (i == 0)
+				{
+					if (j % 7 == 0)
+					{
+						printf("\n");
+					}
+					printf("%.7f ", second_window_normalized[j]);
+					
+				}
+				
 			}
 
 			// FREES MEMORY
@@ -349,7 +404,7 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			index = 0;
 			for (j = 1; j < 49; j++)
 			{
-				if (min < sum_window[j])
+				if (min > sum_window[j])
 				{
 					min = sum_window[j];
 					index = j;
@@ -360,12 +415,12 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 			index2 = (index / 7); // row
 			if (index2 < 3)
 			{
-				temp = ((*contour_rows)[i] - abs(index2 - 3));
+				temp = (*contour_rows)[i] - abs(index2 - 3);
 				new_y[i] = temp;
 			}
 			else if (index2 > 3)
 			{
-				temp = ((*contour_rows)[i] + (index2 - 3));
+				temp = (*contour_rows)[i] + (index2 - 3);
 				new_y[i]  = temp;
 			}
 			else
