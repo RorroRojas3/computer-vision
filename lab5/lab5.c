@@ -320,8 +320,6 @@ void active_contour(unsigned char *image, float *sobel_image, int image_rows, in
 		temp_image[i] = (float)255 - temp_image[i];
 	}
 
-	//save_image(temp_image, "inverted_hawk.ppm", image_rows, image_cols);
-
 	// Calculates first Internal Energy
 	for (l = 0; l < MAXITERATION; l++)
 	{
