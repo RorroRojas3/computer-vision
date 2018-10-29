@@ -7,8 +7,6 @@
 // Definition Section
 #define MAXLENGTH 256
 #define MAXITERATION 30
-#define NEWMIN 0
-#define NEWMAX 255
 #define SQUARE(x) ((x) * (x))
 #define WINDOWSIZE 7
 
@@ -209,10 +207,11 @@ float *normalize_float(float *convolution_image, int image_rows, int image_cols,
 }
 
 /* OUTPUTS NORMALIZED SOBEL IMAGE AND RETURNS UN-NORMALIZED SOBEL IMAGE */
-int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
+float *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 {
 	// Variable Declaration Section
 	int *convolution_image;
+	float *sobel_image;
 	unsigned char *normalized_image;
 	int i, j, rows, cols;
 	int index1 = 0;
@@ -233,6 +232,7 @@ int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 
 	// Allocate memory for image
 	convolution_image = (int *)calloc(image_rows * image_cols, sizeof(int));
+	sobel_image = (float *)calloc(image_rows * image_cols, sizeof(float));
 
 	// Copy original image
 	for (i = 0; i < (image_rows * image_cols); i++)
@@ -259,6 +259,7 @@ int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 			}
 			index1 = (image_cols * rows) + cols;
 			convolution_image[index1] = sqrt((SQUARE(x) + SQUARE(y)));
+			sobel_image[index1] = sqrt((SQUARE(x) + SQUARE(y)));
 		}
 	}
 
@@ -266,20 +267,20 @@ int *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 	find_min_and_max_int(convolution_image, image_rows, image_cols, &min, &max);
 	
 	// Normalize image for visual purposes
-	normalized_image = normalize_unsigned_char(convolution_image, image_rows, image_cols, NEWMIN, NEWMAX, min, max);
+	normalized_image = normalize_unsigned_char(convolution_image, image_rows, image_cols, 0, 255, min, max);
 	save_image(normalized_image, "hawk_sobel_image.ppm", image_rows, image_cols);
 	
 	free(normalized_image);
+	free(convolution_image);
 
-	return convolution_image;
+	return sobel_image;
 }
 
 /* ACTIVE CONTOUR ALGORITHM APPLIED TO ORIGINAL IMAGE */
-void active_contour(unsigned char *image, int *sobel_image, int image_rows, int image_cols, int **contour_rows, int **contour_cols, int arr_length)
+void active_contour(unsigned char *image, float *sobel_image, int image_rows, int image_cols, int **contour_rows, int **contour_cols, int arr_length)
 {
 	// Variable Declaration Section
-	unsigned char *output_image;
-	unsigned char *temp_image;
+	float *temp_image;
 	float *first_internal_energy;
 	float *second_internal_energy;
 	float *external_energy;
@@ -296,38 +297,30 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 	int new_x[arr_length];
 	int new_y[arr_length];
 	int temp = 0;
-	int min1, max1;
 	new_min = 0.0;
 	new_max = 1.0;
 
 	
 	// Allocate memory for image
-	output_image = (unsigned char *)calloc(image_rows * image_cols, sizeof(unsigned char));
 	first_internal_energy = (float *)calloc(49, sizeof(float));
 	second_internal_energy = (float *)calloc(49, sizeof(float));
 	external_energy = (float *)calloc(49, sizeof(float));
 	sum_energies = (float *)calloc(49, sizeof(float));
 
 	// Find minmimum and maximum values of convoluted image
-	find_min_and_max_int(sobel_image, image_rows, image_cols, &min1, &max1);
+	find_min_and_max_float(sobel_image, image_rows, image_cols, &min, &max);
+	//printf("%.2f %.2f ", min, max);
 
 	// Normalize image for visual purposes
-	temp_image = normalize_unsigned_char(sobel_image, image_rows, image_cols, NEWMIN, NEWMAX, min1, max1);
+	temp_image = normalize_float(sobel_image, image_rows, image_cols, 0.0, 1.0, min, max);
 
 
 	for ( i = 0; i < (image_rows * image_cols); i++)
 	{
-		temp_image[i] = 255 - temp_image[i];
+		temp_image[i] = (float)255 - temp_image[i];
 	}
 
-	save_image(temp_image, "inverted_hawk.ppm", image_rows, image_cols);
-	
-	// Copy original image
-	for (i = 0; i < (image_rows * image_cols); i++)
-	{
-		output_image[i] = image[i];
-	}
-
+	//save_image(temp_image, "inverted_hawk.ppm", image_rows, image_cols);
 
 	// Calculates first Internal Energy
 	for (l = 0; l < MAXITERATION; l++)
@@ -466,13 +459,20 @@ void active_contour(unsigned char *image, int *sobel_image, int image_rows, int 
 	// DRAWS CONTOUR WITH FINAL POINTS
 	draw_contour(image, image_rows, image_cols, contour_rows, contour_cols, arr_length, "after_10.ppm");
 
+	// CREATE FILE WITH FINAL CONTOUR POINTS
+	FILE *file;
+	file = fopen("final_contour_points.txt", "w");
+	for(i = 0; i < arr_length; i++)
+	{
+		fprintf(file, "%d %d\n", (*contour_cols)[i], (*contour_rows)[i]);
+	}
+	fclose(file);
+
 	free(first_internal_energy);
 	free(second_internal_energy);
 	free(external_energy);
 	free(temp_image);
 	free(sum_energies);
-	free(output_image);
-	
 }
 
 int main(int argc, char *argv[])
@@ -482,7 +482,7 @@ int main(int argc, char *argv[])
 	int IMAGE_ROWS, IMAGE_COLS, IMAGE_BYTES;
 	char file_header[MAXLENGTH];
 	unsigned char *input_image;
-	int *sobel_image;
+	float *sobel_image;
 	int *contour_rows, *contour_cols;		
 	int file_size;
 
