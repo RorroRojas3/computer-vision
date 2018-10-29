@@ -3,7 +3,6 @@
 	LAB#: 5
 */
 
-
 // LIBRARY SECTION
 #include <stdio.h>
 #include <string.h>
@@ -284,6 +283,13 @@ float *sobel_edge_detector(unsigned char *image, int image_rows, int image_cols)
 	// NORMALIZES CONVOLUTED IMAGE FROM RANGE OF 0-255 IN ORDER TO SAVE AS PPM
 	normalized_image = normalize_unsigned_char(convolution_image, image_rows, image_cols, 0, 255, min, max);
 	save_image(normalized_image, "hawk_sobel_image.ppm", image_rows, image_cols);
+
+	// INVERTS NORMALIZED IMAGE IN ORDER TO SAVE AS PPM
+	for (i = 0; i < (image_rows * image_cols); i++)
+	{
+		normalized_image[i] = 255 - normalized_image[i];
+	}
+	save_image(normalized_image, "hawk_sobel_inverted_image.ppm", image_rows, image_cols);
 	
 	// FREE ALLOCATED MEMORY
 	free(normalized_image);
