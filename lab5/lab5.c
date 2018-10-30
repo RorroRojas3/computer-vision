@@ -477,10 +477,11 @@ void active_contour(unsigned char *image, float *sobel_image, int image_rows, in
 
 	// CREATE FILE WITH FINAL CONTOUR POINTS
 	FILE *file;
-	file = fopen("final_contour_points.txt", "w");
+	file = fopen("final_contour_points.csv", "w");
+	fprintf(file, "COLS,ROWS\n");
 	for(i = 0; i < arr_length; i++)
 	{
-		fprintf(file, "%d %d\n", (*contour_cols)[i], (*contour_rows)[i]);
+		fprintf(file, "%d,%d\n", (*contour_cols)[i], (*contour_rows)[i]);
 	}
 	fclose(file);
 
