@@ -40,7 +40,6 @@ void read_text_file(char *file_name, int *file_size, double **time, double **acc
 		printf("Error, could not read in initial contour text file\n");
 		exit(1);
 	}
-
 	while((c = fgetc(file)) != EOF)
 	{
 		if (c == '\n')
@@ -50,6 +49,7 @@ void read_text_file(char *file_name, int *file_size, double **time, double **acc
 	}
 	rewind(file);
 
+	// SKIPS FIRST LINE OF FILE
 	fgets(line, sizeof(line), file);
 
 	// ALLOCATES MEMORY
@@ -61,7 +61,6 @@ void read_text_file(char *file_name, int *file_size, double **time, double **acc
 	*roll = calloc(*file_size, sizeof(double *));
 	*yaw = calloc(*file_size, sizeof(double *));
 	
-
 	// EXTRACTS TDATA FROM TEXT FILE	
 	while((fscanf(file, "%lf %lf %lf %lf %lf %lf %lf\n", &d1, &d2, &d3, &d4, &d5, &d6, &d7)) != EOF)
 	{
@@ -93,6 +92,7 @@ void smooth_data(int arr_length, double **data, double **smoothed_data)
 	int i, j;
 	double sum;
 	
+	// ALLOCATE MEMORY
 	*smoothed_data = calloc(arr_length, sizeof(double *));
 
 	for (i = 0; i < SMOOTH_WINDOW_SIZE; i++)
@@ -109,7 +109,6 @@ void smooth_data(int arr_length, double **data, double **smoothed_data)
 		}
 		(*smoothed_data)[i] = (sum + (*data)[i]) / SMOOTH_WINDOW_SIZE;
 	}
-
 }
 
 // CALCULATE VARIANCE
@@ -122,7 +121,7 @@ double calc_variance(double **data, int arr_length, int index)
 	double variance = 0;
 
 	// HANDLES ERROR WHEN WINDOW SIZE IS TOO BIG 
-	if (index + VARIANCE_WINDOW_SIZE < arr_length)
+	if ((index + VARIANCE_WINDOW_SIZE) < arr_length)
 	{
 		window = VARIANCE_WINDOW_SIZE;
 	}
@@ -153,6 +152,7 @@ double calc_variance(double **data, int arr_length, int index)
 	return variance;
 }
 
+// DETERMINES IF OBJECT HAS MOVED AND STORES RESULTS ON TEXT AND CSV FILES
 void move_or_still(double **accX, double **accY, double **accZ, double **pitch, double **roll, double **yaw, int arr_length)
 {
 	// VARIABLE DECLARATION SECTION
@@ -165,7 +165,7 @@ void move_or_still(double **accX, double **accY, double **accZ, double **pitch, 
 	double end_time = 0;
 	double acc_variance[3];
 	double gyro_variance[3];
-	double gyro_integration[3];
+	double gyro_distance[3];
 	double velocity[3];
 	double distance_traveled[3];
 	double previous_velocity[3];
@@ -181,16 +181,16 @@ void move_or_still(double **accX, double **accY, double **accZ, double **pitch, 
 		{
 			acc_variance[j] = 0;
 			gyro_variance[j] = 0;
-			gyro_integration[j] = 0;
+			gyro_distance[j] = 0;
 			velocity[j] = 0;
 			distance_traveled[j] = 0;
 			previous_velocity[j] = 0;
 		}
 
+		// CALCULATE VARIANCE FOR BOTH ACCELOREMETER AND GYROSCOPE
 		acc_variance[0] = calc_variance(accX, arr_length, i);
 		acc_variance[1] = calc_variance(accY, arr_length, i);
 		acc_variance[2] = calc_variance(accZ, arr_length, i);
-
 		gyro_variance[0] = calc_variance(pitch, arr_length, i);
 		gyro_variance[1] = calc_variance(roll, arr_length, i);
 		gyro_variance[2] = calc_variance(yaw, arr_length, i);
@@ -207,6 +207,14 @@ void move_or_still(double **accX, double **accY, double **accZ, double **pitch, 
 			|| (gyro_variance[2] > GYRO_THRESHOLD_YAW))
 		{
 			moving = 1;
+		}
+		
+		if (i == 1)
+		{
+			for (j = 0; j < 3; j++)
+			{
+				printf("Acc: %lf, Gyro: %lf\n", acc_variance[j], gyro_variance[j]);
+			}
 		}
 
 		// CHECKS WHEN MOVEMENT STARTED AND ENDED 
@@ -230,9 +238,9 @@ void move_or_still(double **accX, double **accY, double **accZ, double **pitch, 
 			// GYROSCOPE INTEGRATION
 			for (j = start_movement; j < end_movement; j++)
 			{
-				gyro_integration[0] += ((*pitch)[j] * SAMPLE_TIME);
-				gyro_integration[1] += ((*roll)[j] * SAMPLE_TIME);
-				gyro_integration[2] += ((*yaw)[j] * SAMPLE_TIME);
+				gyro_distance[0] += ((*pitch)[j] * SAMPLE_TIME);
+				gyro_distance[1] += ((*roll)[j] * SAMPLE_TIME);
+				gyro_distance[2] += ((*yaw)[j] * SAMPLE_TIME);
 			}
 
 			// ACCELEROMETER DOUBLE INTEGRATION
@@ -240,31 +248,31 @@ void move_or_still(double **accX, double **accY, double **accZ, double **pitch, 
 			{		
 				previous_velocity[0] = velocity[0];		
 				velocity[0] += ((*accX)[j] * GRAVITY * SAMPLE_TIME);
-				distance_traveled[0] += (((velocity[0] - previous_velocity[0]) / 2) * SAMPLE_TIME);
+				distance_traveled[0] += (((velocity[0] + previous_velocity[0]) / 2) * SAMPLE_TIME);
 				
 				previous_velocity[1] = velocity[1];
 				velocity[1] += ((*accY)[j] * GRAVITY * SAMPLE_TIME);
-				distance_traveled[1] += (((velocity[1] - previous_velocity[1]) / 2) * SAMPLE_TIME);
+				distance_traveled[1] += (((velocity[1] + previous_velocity[1]) / 2) * SAMPLE_TIME);
 				
 				previous_velocity[2] = velocity[2];
-				velocity[2]	+= ((*accZ)[j] * GRAVITY * SAMPLE_TIME);
-				distance_traveled[2] += (((velocity[2] - previous_velocity[2]) / 2) * SAMPLE_TIME);	
+				velocity[2]	+= (((*accZ)[j] + 1) * GRAVITY * SAMPLE_TIME);
+				distance_traveled[2] += (((velocity[2] + previous_velocity[2]) / 2) * SAMPLE_TIME);	
 				
 			}
 
 			// TEXT FILE PRINTS
 			fprintf(text_file, "-------------------------------------\n");
 			fprintf(text_file, "Movement #%d:\n", k);
-			fprintf(text_file, "Movement X-axis: %.4f[m]\nMovement Y-axis: %.4f[m]\nMovement Z-axis: %.4f[m]\n", distance_traveled[0], distance_traveled[1], distance_traveled[2]);
-			fprintf(text_file, "Movement Pitch: %.4f[radians]\nMovement Roll: %.4f[radians]\nMovement Yaw: %.4f[radians]\n", gyro_integration[0], gyro_integration[1], gyro_integration[2]);
+			fprintf(text_file, "Movement X-axis: %.6f[m]\nMovement Y-axis: %.6f[m]\nMovement Z-axis: %.6f[m]\n", distance_traveled[0], distance_traveled[1], distance_traveled[2]);
+			fprintf(text_file, "Movement Pitch: %.6f[radians]\nMovement Roll: %.6f[radians]\nMovement Yaw: %.6f[radians]\n", gyro_distance[0], gyro_distance[1], gyro_distance[2]);
 			fprintf(text_file, "Movement Start Time: %.2f | Movement End Time: %.2f\n", start_time, end_time);
 			fprintf(text_file, "-------------------------------------\n\n");
 
 			// CSV FILE PRINTS
-			fprintf(csv_file, "%d,%d,%.2f,%.2f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n", 
+			fprintf(csv_file, "%d,%d,%.2f,%.2f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", 
 					start_movement, end_movement, start_time, end_time, 
 					distance_traveled[0], distance_traveled[1], distance_traveled[2], 
-					gyro_integration[0], gyro_integration[1], gyro_integration[2]);
+					gyro_distance[0], gyro_distance[1], gyro_distance[2]);
 
 			start_movement = 0;
 			end_movement = 0;
