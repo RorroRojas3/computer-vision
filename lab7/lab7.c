@@ -156,8 +156,8 @@ double calc_variance(double **data, int arr_length, int index)
 void move_or_still(double **accX, double **accY, double **accZ, double **pitch, double **roll, double **yaw, int arr_length)
 {
 	// VARIABLE DECLARATION SECTION
-	FILE *file;
-	int i, j;
+	FILE *text_file, *csv_file;
+	int i, j, k;
 	int start_movement = 0;
 	int end_movement = 0;
 	int moving = 0;
@@ -169,9 +169,12 @@ void move_or_still(double **accX, double **accY, double **accZ, double **pitch, 
 	double velocity[3];
 	double distance_traveled[3];
 	double previous_velocity[3];
+	k = 1;
 
-	file = fopen("output.txt", "w");
-
+	text_file = fopen("movement.txt", "w");
+	csv_file = fopen("movement.csv", "w");
+	fprintf(csv_file, "Start Index,Stop Index,Start Time,End Time,X Distance [m],Y Distance [m],Z Distance [m],Pitch Angular Rotation [radians],Roll Angular Rotation [radians],Yaw Angular Rotation [radians]\n");
+	
 	for (i = 0; i < arr_length; i++)
 	{
 		for(j = 0; j < 3; j++)
@@ -218,8 +221,6 @@ void move_or_still(double **accX, double **accY, double **accZ, double **pitch, 
 			end_time = end_movement * SAMPLE_TIME;
 		}
 
-		distance_traveled[0] = 0;
-
 
 		// ONCE MOVEMENT PERIOD OBTAINED, GYROSCOPE AND ACCELERATION INTEGRATION IS CALCULATED
 		if (start_movement != 0 && end_movement != 0)
@@ -236,35 +237,45 @@ void move_or_still(double **accX, double **accY, double **accZ, double **pitch, 
 
 			// ACCELEROMETER DOUBLE INTEGRATION
 			for (j = start_movement; j < end_movement; j++)
-			{				
+			{		
+				previous_velocity[0] = velocity[0];		
 				velocity[0] += ((*accX)[j] * GRAVITY * SAMPLE_TIME);
 				distance_traveled[0] += (((velocity[0] - previous_velocity[0]) / 2) * SAMPLE_TIME);
-				previous_velocity[0] = velocity[0];
 				
+				previous_velocity[1] = velocity[1];
 				velocity[1] += ((*accY)[j] * GRAVITY * SAMPLE_TIME);
 				distance_traveled[1] += (((velocity[1] - previous_velocity[1]) / 2) * SAMPLE_TIME);
-				previous_velocity[1] = velocity[1];
 				
+				previous_velocity[2] = velocity[2];
 				velocity[2]	+= ((*accZ)[j] * GRAVITY * SAMPLE_TIME);
 				distance_traveled[2] += (((velocity[2] - previous_velocity[2]) / 2) * SAMPLE_TIME);	
-				previous_velocity[2] = velocity[2];
+				
 			}
 
-			fprintf(file, "-------------------------------------\n");
-			fprintf(file, "New Movement:\n");
-			fprintf(file, "Movement X-axis: %.4f[m]\nMovement Y-axis: %.4f[m]\nMovement Z-axis: %.4f[m]\n", distance_traveled[0], distance_traveled[1], distance_traveled[2]);
-			fprintf(file, "Movement Pitch: %.4f[radians]\nMovement Roll: %.4f[radians]\nMovement Yaw: %.4f[radians]\n", gyro_integration[0], gyro_integration[1], gyro_integration[2]);
-			fprintf(file, "Movement Start Time: %.2f | Movement End Time: %.2f\n", start_time, end_time);
-			fprintf(file, "-------------------------------------\n\n");
+			// TEXT FILE PRINTS
+			fprintf(text_file, "-------------------------------------\n");
+			fprintf(text_file, "Movement #%d:\n", k);
+			fprintf(text_file, "Movement X-axis: %.4f[m]\nMovement Y-axis: %.4f[m]\nMovement Z-axis: %.4f[m]\n", distance_traveled[0], distance_traveled[1], distance_traveled[2]);
+			fprintf(text_file, "Movement Pitch: %.4f[radians]\nMovement Roll: %.4f[radians]\nMovement Yaw: %.4f[radians]\n", gyro_integration[0], gyro_integration[1], gyro_integration[2]);
+			fprintf(text_file, "Movement Start Time: %.2f | Movement End Time: %.2f\n", start_time, end_time);
+			fprintf(text_file, "-------------------------------------\n\n");
+
+			// CSV FILE PRINTS
+			fprintf(csv_file, "%d,%d,%.2f,%.2f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n", 
+					start_movement, end_movement, start_time, end_time, 
+					distance_traveled[0], distance_traveled[1], distance_traveled[2], 
+					gyro_integration[0], gyro_integration[1], gyro_integration[2]);
 
 			start_movement = 0;
 			end_movement = 0;
 			start_time = 0;
 			end_time = 0;
+			k++;
 		}
 		moving = 0;
 	}
-	fclose(file);
+	fclose(text_file);
+	fclose(csv_file);
 }
 
 int main(int argc, char *argv[])
