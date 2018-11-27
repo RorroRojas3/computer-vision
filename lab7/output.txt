@@ -1,88 +1,132 @@
 -------------------------------------
 New Movement:
-Movement X-axis: 0.0006[m]
-Movement Y-axis: -0.0010[m]
-Movement Z-axis: -0.2543[m]
-Movement Pitch: 0.0194[radians]
-Movement Roll: -0.0263[radians]
-Movement Yaw: 0.3307[radians]
-Movement Start Time: 31.35 | Movement End Time: 32.40
+Movement X-axis: 0.0098[m]
+Movement Y-axis: 0.0011[m]
+Movement Z-axis: -0.5577[m]
+Movement Pitch: -0.0193[radians]
+Movement Roll: -0.0006[radians]
+Movement Yaw: -0.0443[radians]
+Movement Start Time: 0.05 | Movement End Time: 2.35
 -------------------------------------
 
 -------------------------------------
 New Movement:
-Movement X-axis: -0.0039[m]
-Movement Y-axis: -0.0003[m]
-Movement Z-axis: -0.2675[m]
-Movement Pitch: 0.0113[radians]
-Movement Roll: 0.0252[radians]
-Movement Yaw: 0.7523[radians]
-Movement Start Time: 32.85 | Movement End Time: 33.95
+Movement X-axis: 0.0055[m]
+Movement Y-axis: 0.0065[m]
+Movement Z-axis: -0.6304[m]
+Movement Pitch: 0.0025[radians]
+Movement Roll: -0.0179[radians]
+Movement Yaw: 0.0388[radians]
+Movement Start Time: 4.45 | Movement End Time: 7.05
+-------------------------------------
+
+-------------------------------------
+New Movement:
+Movement X-axis: 0.0012[m]
+Movement Y-axis: 0.0035[m]
+Movement Z-axis: -0.5937[m]
+Movement Pitch: 0.0002[radians]
+Movement Roll: -0.0128[radians]
+Movement Yaw: -0.0143[radians]
+Movement Start Time: 9.35 | Movement End Time: 11.80
+-------------------------------------
+
+-------------------------------------
+New Movement:
+Movement X-axis: 0.0089[m]
+Movement Y-axis: 0.0001[m]
+Movement Z-axis: -0.6910[m]
+Movement Pitch: -0.0055[radians]
+Movement Roll: 0.0065[radians]
+Movement Yaw: 0.0455[radians]
+Movement Start Time: 13.35 | Movement End Time: 16.20
+-------------------------------------
+
+-------------------------------------
+New Movement:
+Movement X-axis: 0.0210[m]
+Movement Y-axis: -0.0040[m]
+Movement Z-axis: -0.5602[m]
+Movement Pitch: 0.1434[radians]
+Movement Roll: 0.1187[radians]
+Movement Yaw: -0.0586[radians]
+Movement Start Time: 17.90 | Movement End Time: 20.20
+-------------------------------------
+
+-------------------------------------
+New Movement:
+Movement X-axis: 0.0977[m]
+Movement Y-axis: -0.0608[m]
+Movement Z-axis: -0.6402[m]
+Movement Pitch: -0.1935[radians]
+Movement Roll: -0.0719[radians]
+Movement Yaw: 0.0628[radians]
+Movement Start Time: 21.45 | Movement End Time: 24.15
 -------------------------------------
 
 -------------------------------------
 New Movement:
 Movement X-axis: -0.0023[m]
-Movement Y-axis: 0.0012[m]
-Movement Z-axis: -0.2554[m]
-Movement Pitch: 0.0018[radians]
-Movement Roll: -0.0052[radians]
-Movement Yaw: -0.4048[radians]
-Movement Start Time: 37.30 | Movement End Time: 38.35
+Movement Y-axis: -0.0019[m]
+Movement Z-axis: -0.6796[m]
+Movement Pitch: 0.0487[radians]
+Movement Roll: -0.0074[radians]
+Movement Yaw: 1.4304[radians]
+Movement Start Time: 30.15 | Movement End Time: 32.95
 -------------------------------------
 
 -------------------------------------
 New Movement:
-Movement X-axis: 0.0020[m]
-Movement Y-axis: 0.0010[m]
-Movement Z-axis: -0.2558[m]
-Movement Pitch: -0.0048[radians]
-Movement Roll: -0.0003[radians]
-Movement Yaw: -0.8347[radians]
-Movement Start Time: 38.60 | Movement End Time: 39.65
+Movement X-axis: -0.0009[m]
+Movement Y-axis: 0.0023[m]
+Movement Z-axis: -0.6091[m]
+Movement Pitch: -0.0018[radians]
+Movement Roll: -0.0094[radians]
+Movement Yaw: -1.4500[radians]
+Movement Start Time: 36.10 | Movement End Time: 38.60
 -------------------------------------
 
 -------------------------------------
 New Movement:
-Movement X-axis: -0.0242[m]
-Movement Y-axis: -0.2882[m]
-Movement Z-axis: -0.3623[m]
-Movement Pitch: 1.5636[radians]
-Movement Roll: -0.0922[radians]
-Movement Yaw: -0.0684[radians]
-Movement Start Time: 42.85 | Movement End Time: 45.30
+Movement X-axis: -0.0215[m]
+Movement Y-axis: -0.2036[m]
+Movement Z-axis: -0.4894[m]
+Movement Pitch: 1.5347[radians]
+Movement Roll: -0.0970[radians]
+Movement Yaw: -0.0753[radians]
+Movement Start Time: 41.75 | Movement End Time: 44.35
 -------------------------------------
 
 -------------------------------------
 New Movement:
-Movement X-axis: -0.0220[m]
-Movement Y-axis: -0.3848[m]
-Movement Z-axis: -0.2775[m]
-Movement Pitch: -1.5454[radians]
-Movement Roll: 0.0398[radians]
-Movement Yaw: 0.0528[radians]
-Movement Start Time: 48.05 | Movement End Time: 50.50
+Movement X-axis: -0.0261[m]
+Movement Y-axis: -0.5294[m]
+Movement Z-axis: -0.1660[m]
+Movement Pitch: -1.4773[radians]
+Movement Roll: 0.0057[radians]
+Movement Yaw: 0.0446[radians]
+Movement Start Time: 46.85 | Movement End Time: 49.45
 -------------------------------------
 
 -------------------------------------
 New Movement:
-Movement X-axis: 0.2794[m]
-Movement Y-axis: 0.0002[m]
-Movement Z-axis: -0.3327[m]
-Movement Pitch: 0.0012[radians]
-Movement Roll: 1.6680[radians]
-Movement Yaw: -0.0725[radians]
-Movement Start Time: 53.05 | Movement End Time: 55.40
+Movement X-axis: 0.1584[m]
+Movement Y-axis: -0.0000[m]
+Movement Z-axis: -0.4718[m]
+Movement Pitch: -0.0055[radians]
+Movement Roll: 1.6642[radians]
+Movement Yaw: -0.0752[radians]
+Movement Start Time: 51.95 | Movement End Time: 54.30
 -------------------------------------
 
 -------------------------------------
 New Movement:
-Movement X-axis: 0.3934[m]
-Movement Y-axis: -0.0008[m]
-Movement Z-axis: -0.2388[m]
-Movement Pitch: -0.0409[radians]
-Movement Roll: -1.6027[radians]
-Movement Yaw: 0.0438[radians]
-Movement Start Time: 58.15 | Movement End Time: 60.55
+Movement X-axis: 0.5258[m]
+Movement Y-axis: -0.0013[m]
+Movement Z-axis: -0.1250[m]
+Movement Pitch: -0.0488[radians]
+Movement Roll: -1.6459[radians]
+Movement Yaw: 0.0477[radians]
+Movement Start Time: 57.00 | Movement End Time: 59.55
 -------------------------------------
 

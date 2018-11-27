@@ -10,12 +10,16 @@
 
 // Define Declaration Section
 #define MAXLENGTH 256
-#define ACC_THRESHOLD 0.002
-#define GYRO_THRESHOLD 0.005
+#define ACC_THRESHOLD_X 0.0009
+#define ACC_THRESHOLD_Y 0.0009
+#define ACC_THRESHOLD_Z 0.0009
+#define GYRO_THRESHOLD_PITCH 0.03
+#define GYRO_THRESHOLD_ROLL 0.03
+#define GYRO_THRESHOLD_YAW 0.03
 #define SMOOTH_WINDOW_SIZE 25
-#define VARIANCE_WINDOW_SIZE 10
+#define VARIANCE_WINDOW_SIZE 30
 #define SAMPLE_TIME 0.05
-#define GRAVITY 9.8
+#define GRAVITY 9.81
 
 // READ IN TEXT FILE AND EXTRACT DATA
 void read_text_file(char *file_name, int *file_size, double **time, double **accX, double **accY,
@@ -149,8 +153,7 @@ double calc_variance(double **data, int arr_length, int index)
 	return variance;
 }
 
-void move_or_still(double **smooth_accX, double **smooth_accY, double **smooth_accZ, 
-					double **smooth_pitch, double **smooth_roll, double **smooth_yaw, int arr_length)
+void move_or_still(double **accX, double **accY, double **accZ, double **pitch, double **roll, double **yaw, int arr_length)
 {
 	// VARIABLE DECLARATION SECTION
 	FILE *file;
@@ -181,24 +184,24 @@ void move_or_still(double **smooth_accX, double **smooth_accY, double **smooth_a
 			previous_velocity[j] = 0;
 		}
 
-		acc_variance[0] = calc_variance(smooth_accX, arr_length, i);
-		acc_variance[1] = calc_variance(smooth_accY, arr_length, i);
-		acc_variance[2] = calc_variance(smooth_accY, arr_length, i);
+		acc_variance[0] = calc_variance(accX, arr_length, i);
+		acc_variance[1] = calc_variance(accY, arr_length, i);
+		acc_variance[2] = calc_variance(accZ, arr_length, i);
 
-		gyro_variance[0] = calc_variance(smooth_pitch, arr_length, i);
-		gyro_variance[1] = calc_variance(smooth_roll, arr_length, i);
-		gyro_variance[2] = calc_variance(smooth_yaw, arr_length, i);
+		gyro_variance[0] = calc_variance(pitch, arr_length, i);
+		gyro_variance[1] = calc_variance(roll, arr_length, i);
+		gyro_variance[2] = calc_variance(yaw, arr_length, i);
 
 		// IF TRUE, ACCELOREMETER IN MOTION
-		if ((acc_variance[0] > ACC_THRESHOLD) || (acc_variance[1] > ACC_THRESHOLD) 
-			|| (acc_variance[2] > ACC_THRESHOLD))
+		if ((acc_variance[0] > ACC_THRESHOLD_X) || (acc_variance[1] > ACC_THRESHOLD_Y) 
+			|| (acc_variance[2] > ACC_THRESHOLD_Z))
 		{
 			moving = 1;	
 		}
 
 		// IF TRUE, GYROSCOPE IN MOTION 
-		if ((gyro_variance[0] > GYRO_THRESHOLD) || (gyro_variance[1] > GYRO_THRESHOLD) 
-			|| (gyro_variance[2] > GYRO_THRESHOLD))
+		if ((gyro_variance[0] > GYRO_THRESHOLD_PITCH) || (gyro_variance[1] > GYRO_THRESHOLD_ROLL) 
+			|| (gyro_variance[2] > GYRO_THRESHOLD_YAW))
 		{
 			moving = 1;
 		}
@@ -226,23 +229,23 @@ void move_or_still(double **smooth_accX, double **smooth_accY, double **smooth_a
 			// GYROSCOPE INTEGRATION
 			for (j = start_movement; j < end_movement; j++)
 			{
-				gyro_integration[0] += ((*smooth_pitch)[j] * SAMPLE_TIME);
-				gyro_integration[1] += ((*smooth_roll)[j] * SAMPLE_TIME);
-				gyro_integration[2] += ((*smooth_yaw)[j] * SAMPLE_TIME);
+				gyro_integration[0] += ((*pitch)[j] * SAMPLE_TIME);
+				gyro_integration[1] += ((*roll)[j] * SAMPLE_TIME);
+				gyro_integration[2] += ((*yaw)[j] * SAMPLE_TIME);
 			}
 
 			// ACCELEROMETER DOUBLE INTEGRATION
 			for (j = start_movement; j < end_movement; j++)
 			{				
-				velocity[0] += ((*smooth_accX)[j] * GRAVITY * SAMPLE_TIME);
+				velocity[0] += ((*accX)[j] * GRAVITY * SAMPLE_TIME);
 				distance_traveled[0] += (((velocity[0] - previous_velocity[0]) / 2) * SAMPLE_TIME);
 				previous_velocity[0] = velocity[0];
 				
-				velocity[1] += ((*smooth_accY)[j] * GRAVITY * SAMPLE_TIME);
+				velocity[1] += ((*accY)[j] * GRAVITY * SAMPLE_TIME);
 				distance_traveled[1] += (((velocity[1] - previous_velocity[1]) / 2) * SAMPLE_TIME);
 				previous_velocity[1] = velocity[1];
 				
-				velocity[2]	+= ((*smooth_accZ)[j] * GRAVITY * SAMPLE_TIME);
+				velocity[2]	+= ((*accZ)[j] * GRAVITY * SAMPLE_TIME);
 				distance_traveled[2] += (((velocity[2] - previous_velocity[2]) / 2) * SAMPLE_TIME);	
 				previous_velocity[2] = velocity[2];
 			}
@@ -299,9 +302,10 @@ int main(int argc, char *argv[])
 	}
 	fclose(file);
 
-	/* CALCULATE VARIANCE */
-	move_or_still(&smooth_accX, &smooth_accY, &smooth_accZ, &smooth_pitch, &smooth_roll, &smooth_yaw, file_size);
-	//move_or_still(&accX, &accY, &accZ, &pitch, &roll, &yaw, file_size);
+	/* DETERMINE MOVEMENT */
+	move_or_still(&accX, &accY, &accZ, &pitch, &roll, &yaw, file_size);
+	//move_or_still(&smooth_accX, &smooth_accY, &smooth_accZ, &smooth_pitch, &smooth_roll, &smooth_yaw, file_size);
+	
 	
 	return 0;
 }
