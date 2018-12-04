@@ -5,6 +5,7 @@
 
 #define MAXLENGTH 256
 #define THRESHOLD 137
+#define PIXEL_WITDH 3
 
 // RETURNS PPM IMAGE
 unsigned char *read_in_image(int rows, int cols, FILE *image_file)
@@ -45,7 +46,7 @@ unsigned char *threshold_image(int rows, int cols, unsigned char *image)
 	// THRESHOLD IMAGE 
 	for (i = 0; i < (rows * cols); i++)
 	{
-		if (image[i] < THRESHOLD)
+		if (image[i] > THRESHOLD)
 		{
 			output_image[i] = 255;
 		}
@@ -57,7 +58,7 @@ unsigned char *threshold_image(int rows, int cols, unsigned char *image)
 }
 
 // CALCULATES THE X,Y, AND Z COORDINATES OF IMAGE
-void calc_points(unsigned char *image, unsigned char *threshold_image, int rows, int cols, double **X, double **Y, double **Z)
+void calc_3Dpoints(unsigned char *image, int rows, int cols, double **X, double **Y, double **Z)
 {
 	// VARIABLE DECLARATION SECTION
 	int i, j;
@@ -103,6 +104,48 @@ void calc_points(unsigned char *image, unsigned char *threshold_image, int rows,
 	}
 }
 
+void calc_surface_normal(unsigned char *image, unsigned char *threshold_image, int rows, int cols, double **S_X, double **S_Y, double **S_Z)
+{
+	// VARIABLE DECLARATION SECTION
+	int i, j;
+	int index1, index2, index3;
+	double *X, *Y, *Z;
+	double x1, x2, y1, y2, z1, z2;
+
+	// Obtains 3D points in image
+	calc_3Dpoints(image, rows, cols, &X, &Y, &Z);
+
+	// ALLOCATION OF MEMORY
+	*S_X = calloc(rows * cols, sizeof(double *));
+	*S_Y = calloc(rows * cols, sizeof(double *));
+	*S_Z = calloc(rows * cols, sizeof(double *));
+
+	for (i = 0; i < (rows - 3); i++)
+	{
+		for (j = 0; j < (cols - 3); j++)
+		{
+			index1 = (i * cols) + j;
+			index2 = ((i + PIXEL_WITDH) * cols) + j;
+			index3 = (i * cols) + (j + PIXEL_WITDH);
+
+			// VECTOR A
+			x1 = X[index3] - X[index1];
+			y1 = Y[index3] - Y[index1];
+			z1 = Z[index3] - Z[index1];
+
+			// VECTOR B
+			x2 = X[index2] - X[index1];
+			y2 = Y[index2] - Y[index1];
+			z2 = Z[index2] - Z[index1];
+
+			// CROSS PRODUCT CALCULATION
+			(*S_X)[index1] = (y1 * z2) - (z1 * y2);
+			(*S_Y)[index1] = ((x1 * z2) - (z1 * x2)) * -1;
+			(*S_Z)[index1] = (x1 * y2) - (y1 * x2); 
+		}
+	}
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -111,7 +154,7 @@ int main(int argc, char *argv[])
 	int IMAGE_ROWS, IMAGE_COLS, IMAGE_BYTES;
 	char file_header[MAXLENGTH];
 	unsigned char *input_image, *thresholded_image;
-	double *X, *Y, *Z;
+	//double *X, *Y, *Z;
 
 	if (argc != 2)
 	{
@@ -140,10 +183,7 @@ int main(int argc, char *argv[])
 	thresholded_image = threshold_image(IMAGE_ROWS, IMAGE_COLS, input_image);
 
 	/* CALCULATES 3D POINTS */
-	calc_points(input_image, thresholded_image, IMAGE_ROWS, IMAGE_COLS, &X, &Y, &Z);
-
-	printf("%lf %lf %lf\n", X[0], Y[0], Z[0]);
-	printf("%lf %lf %lf\n", X[1], Y[1], Z[1]);
+	//calc_3Dpoints(input_image, IMAGE_ROWS, IMAGE_COLS, &X, &Y, &Z);
 
 
 	return 0;
