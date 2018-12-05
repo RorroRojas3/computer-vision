@@ -6,6 +6,7 @@
 #define MAXLENGTH 256
 #define THRESHOLD 137
 #define PIXEL_WITDH 3
+#define MAX_QUEUE 10000
 
 // RETURNS PPM IMAGE
 unsigned char *read_in_image(int rows, int cols, FILE *image_file)
@@ -49,6 +50,10 @@ unsigned char *threshold_image(int rows, int cols, unsigned char *image)
 		if (image[i] > THRESHOLD)
 		{
 			output_image[i] = 255;
+		}
+		else
+		{
+			output_image[i] = image[i];
 		}
 	}
 
@@ -120,9 +125,9 @@ void calc_surface_normal(unsigned char *image, unsigned char *threshold_image, i
 	*S_Y = calloc(rows * cols, sizeof(double *));
 	*S_Z = calloc(rows * cols, sizeof(double *));
 
-	for (i = 0; i < (rows - 3); i++)
+	for (i = 0; i < (rows - PIXEL_WITDH); i++)
 	{
-		for (j = 0; j < (cols - 3); j++)
+		for (j = 0; j < (cols - PIXEL_WITDH); j++)
 		{
 			index1 = (i * cols) + j;
 			index2 = ((i + PIXEL_WITDH) * cols) + j;
@@ -144,6 +149,69 @@ void calc_surface_normal(unsigned char *image, unsigned char *threshold_image, i
 			(*S_Z)[index1] = (x1 * y2) - (y1 * x2); 
 		}
 	}
+}
+
+// REGION GROW
+int queue_paint_full(unsigned char *image, int rows, int cols, 
+					int current_row, int current_col, 
+					int paint_over_label, int new_label,
+					double **X, double **Y, double **Z)
+{
+	// VARIABLE DECLARATION SECTION
+	int count;
+	int	r2,c2;
+    int	queue[MAX_QUEUE],qh,qt;
+	int total_regions;
+	double dot_product;
+
+    count = 0;
+
+	if (image[current_row * cols + current_col] != paint_over_label)
+	{
+        return 0;
+	}
+
+    queue[0] = current_row * cols + current_col;
+    qh = 1;	/* queue head */
+    qt = 0;	/* queue tail */
+    count = 1;
+
+    while (qt != qh)
+    {
+        for (r2=-1; r2<=1; r2++)
+        {
+            for (c2=-1; c2<=1; c2++)
+            {
+                if (r2 == 0  &&  c2 == 0)
+                {
+                    continue;
+                }
+                
+                if ((queue[qt] / cols + r2) < 0  ||  (queue[qt] / cols + r2) >= rows  ||
+                (queue[qt] % cols + c2) < 0  ||  (queue[qt] % cols + c2) >= cols)
+                {
+                    continue;
+                }
+            
+                image[(queue[qt]/cols+r2)*cols+queue[qt]%cols+c2] = new_label;
+                
+                count++;
+                
+                queue[qh] = (queue[qt] / cols + r2) * cols+ queue[qt] % cols + c2;
+                
+                qh= (qh + 1) % MAX_QUEUE;
+                
+                if (qh == qt)
+                {
+                    printf("Max queue size exceeded\n");
+                    exit(0);
+                }
+            }
+        }
+        qt = (qt + 1 )% MAX_QUEUE;
+    }
+
+	return count;
 }
 
 
@@ -183,7 +251,7 @@ int main(int argc, char *argv[])
 	thresholded_image = threshold_image(IMAGE_ROWS, IMAGE_COLS, input_image);
 
 	/* CALCULATES 3D POINTS */
-	calc_3Dpoints(input_image, IMAGE_ROWS, IMAGE_COLS, &X, &Y, &Z);
+	calc_3Dpoints(thresholded_image, IMAGE_ROWS, IMAGE_COLS, &X, &Y, &Z);
 
 
 	printf("X: %lf, Y: %lf, Z: %lf\n", X[0], Y[0], Z[0]);
