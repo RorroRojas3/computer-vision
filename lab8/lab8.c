@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 	int IMAGE_ROWS, IMAGE_COLS, IMAGE_BYTES;
 	char file_header[MAXLENGTH];
 	unsigned char *input_image, *thresholded_image;
-	//double *X, *Y, *Z;
+	double *X, *Y, *Z;
 
 	if (argc != 2)
 	{
@@ -183,8 +183,10 @@ int main(int argc, char *argv[])
 	thresholded_image = threshold_image(IMAGE_ROWS, IMAGE_COLS, input_image);
 
 	/* CALCULATES 3D POINTS */
-	//calc_3Dpoints(input_image, IMAGE_ROWS, IMAGE_COLS, &X, &Y, &Z);
+	calc_3Dpoints(input_image, IMAGE_ROWS, IMAGE_COLS, &X, &Y, &Z);
 
+
+	printf("X: %lf, Y: %lf, Z: %lf\n", X[0], Y[0], Z[0]);
 
 	return 0;
 }
