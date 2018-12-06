@@ -228,6 +228,7 @@ int queue_paint_full(unsigned char *image, unsigned char *paint_image, int rows,
 
 				// IF PIXEL IN SAME REGION, ADDED TO THE REGION, AVERAGE SURFANCE FOR X, Y, AND Z CALCULATED,
 				// AND PIXEL IS LABELED.
+				count++;
 				total[0] += (*X)[index];
 				total[1] += (*Y)[index];
 				total[2] += (*Z)[index];
@@ -235,8 +236,7 @@ int queue_paint_full(unsigned char *image, unsigned char *paint_image, int rows,
 				average_surface_Y = total[1] / count;
 				average_surface_Z = total[2] / count;
                 paint_image[index] = new_label;
-                count++;
-                
+                          
                 queue[qh] = (queue[qt] / cols + r2) * cols+ queue[qt] % cols + c2;
                 
                 qh = (qh + 1) % MAX_QUEUE;
