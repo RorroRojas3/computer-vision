@@ -245,6 +245,7 @@ int queue_paint_full(unsigned char *image, unsigned char *paint_image, int rows,
         qt = (qt + 1 )% MAX_QUEUE;
     }
 
+	printf("X: %lf, Y: %lf, Z: %lf\n", average_surface_X, average_surface_Y, average_surface_Z);
 	return count;
 }
 
@@ -331,15 +332,13 @@ int main(int argc, char *argv[])
 				{
 					regions++;
 					new_label += 30;
-					printf("R: %d, C: %d, Region: %d, Pixels: %d\n", i, j, regions, count);
+					printf("Region: %d, Number of Pixels: %d\n", regions, count);
 				}
 			}
 
 		}
 	}
 
-	//count = queue_paint_full(input_image, paint_image, IMAGE_ROWS, IMAGE_COLS, 61, 77, 255, 255, &S_X, &S_Y, &S_Z);
-	//printf("Count: %d\n", count);
 	save_image(paint_image, "paint.ppm", IMAGE_ROWS, IMAGE_COLS);
 
 	return 0;
