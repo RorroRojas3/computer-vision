@@ -172,10 +172,16 @@ int queue_paint_full(unsigned char *image, unsigned char *paint_image, int rows,
 
     count = 0;
 
+	// STARTING AVERAGE SURANCE NORMALS (AT CURRENT PIXEL VALUE)
 	index = (current_row * cols) + current_col;
 	average_surface_X = (*X)[index];
 	average_surface_Y = (*Y)[index];
 	average_surface_Z = (*Z)[index];
+
+	// STARTING TOTAL SUM VALUES (AT CURRENT PIXEL VALUE)
+	total[0] = (*X)[index];
+	total[1] = (*Y)[index];
+	total[2] = (*Z)[index];
 
     queue[0] = index;
     qh = 1;	/* queue head */
@@ -214,21 +220,21 @@ int queue_paint_full(unsigned char *image, unsigned char *paint_image, int rows,
 				distance_B = sqrt( pow((*X)[index], 2) + pow((*Y)[index],2 ) + pow((*Z)[index], 2) );  
 				angle = acos(dot_product / (distance_A * distance_B));
 
+				// PREDICATE WHICH DETERMINES IF CURRENT PIXEL IS IN THE SAME REGION
 				if (angle > ANGULAR_THRESHOLD)
 				{
 					continue;
 				}
 
+				// IF PIXEL IN SAME REGION, ADDED TO THE REGION, AVERAGE SURFANCE FOR X, Y, AND Z CALCULATED,
+				// AND PIXEL IS LABELED.
 				total[0] += (*X)[index];
 				total[1] += (*Y)[index];
 				total[2] += (*Z)[index];
-
 				average_surface_X = total[0] / count;
 				average_surface_Y = total[1] / count;
 				average_surface_Z = total[2] / count;
-
                 paint_image[index] = new_label;
-                
                 count++;
                 
                 queue[qh] = (queue[qt] / cols + r2) * cols+ queue[qt] % cols + c2;
@@ -293,9 +299,10 @@ int main(int argc, char *argv[])
 	/* CALCULATE SURFACE NORMALS */
 	calc_surface_normal(input_image, thresholded_image, IMAGE_ROWS, IMAGE_COLS, &S_X, &S_Y, &S_Z);
 
+	/* ALLOCATE MEMORY FOR OUTPUT IMAGE WHICH WILL BE USED FOR REGION GROW */
 	paint_image = calloc(IMAGE_ROWS * IMAGE_COLS, sizeof(unsigned char));
 
-	/* REGION GROW POINTS */
+	/* REGION GROW  */
 	for (i = 2; i < IMAGE_ROWS - 2; i++)
 	{
 		for (j = 2; j < IMAGE_COLS - 2; j++)
@@ -312,12 +319,10 @@ int main(int argc, char *argv[])
 					}
 				}
 			}
-			//printf("Valid: %d\n", valid);
 			if (valid == 1)
 			{
 				count = queue_paint_full(input_image, paint_image, IMAGE_ROWS, IMAGE_COLS, i, j, 255, new_label, &S_X, &S_Y, &S_Z);
-				//printf("Count: %d\n", count);
-				
+				// IF REGION NOT BIG ENOUGH, LABELING IS RESETTED AND NOT COUNTED
 				if (count < 100)
 				{
 					for (k = 0; k < (IMAGE_ROWS * IMAGE_COLS); k++)
