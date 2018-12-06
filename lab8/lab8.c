@@ -7,7 +7,7 @@
 #define THRESHOLD 137
 #define PIXEL_WITDH 3
 #define MAX_QUEUE 10000
-#define ANGULAR_THRESHOLD 0.8
+#define ANGULAR_THRESHOLD 0.65
 
 // RETURNS PPM IMAGE
 unsigned char *read_in_image(int rows, int cols, FILE *image_file)
@@ -100,7 +100,7 @@ void calc_3Dpoints(unsigned char *image, int rows, int cols, double **X, double 
 		{
 			slant_correction = cp[3] * cp[1] * ((double)j - cp[2]);
 			x_angle = cp[0] * cp[1] * ((double)j - cp[2]);
-			y_angle = (cp[3] * cp[4] * (cp[5] - (double)i)) + (slant_correction * -1);	/*  + slant correction */
+			y_angle = (cp[3] * cp[4] * (cp[5] - (double)i)) + (slant_correction * 1);	/*  + slant correction */
 			index = (i * cols) + j;
 			distance = (double)image[index] + cp[6];
 			(*Z)[index] = sqrt((distance * distance) / (1.0 + (tan(x_angle) * tan(x_angle)) + (tan(y_angle) *tan(y_angle))));
