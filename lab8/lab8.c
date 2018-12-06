@@ -7,6 +7,7 @@
 #define THRESHOLD 137
 #define PIXEL_WITDH 3
 #define MAX_QUEUE 10000
+#define ANGULAR_THRESHOLD 0.7
 
 // RETURNS PPM IMAGE
 unsigned char *read_in_image(int rows, int cols, FILE *image_file)
@@ -152,7 +153,7 @@ void calc_surface_normal(unsigned char *image, unsigned char *threshold_image, i
 }
 
 // REGION GROW
-int queue_paint_full(unsigned char *image, int rows, int cols, 
+int queue_paint_full(unsigned char *image, unsigned char *paint_image, int rows, int cols, 
 					int current_row, int current_col, 
 					int paint_over_label, int new_label,
 					double **X, double **Y, double **Z)
@@ -161,45 +162,78 @@ int queue_paint_full(unsigned char *image, int rows, int cols,
 	int count;
 	int	r2,c2;
     int	queue[MAX_QUEUE],qh,qt;
-	int total_regions;
+	int index;
 	double dot_product;
+	double average_surface_X, average_surface_Y, average_surface_Z;
+	double angle = 0;
+	double distance_A = 0;
+	double distance_B = 0;
+	double total[3] = {0, 0, 0};
 
     count = 0;
 
-	if (image[current_row * cols + current_col] != paint_over_label)
-	{
-        return 0;
-	}
+	index = (current_row * cols) + current_col;
+	average_surface_X = (*X)[index];
+	average_surface_Y = (*Y)[index];
+	average_surface_Z = (*Z)[index];
 
-    queue[0] = current_row * cols + current_col;
+    queue[0] = index;
     qh = 1;	/* queue head */
     qt = 0;	/* queue tail */
     count = 1;
 
     while (qt != qh)
     {
-        for (r2=-1; r2<=1; r2++)
+        for (r2 = -1; r2 <= 1; r2++)
         {
-            for (c2=-1; c2<=1; c2++)
+            for (c2 = -1; c2 <= 1; c2++)
             {
+
+				index = (queue[qt] / cols + r2) * cols + queue[qt] % cols + c2;
+
+				// PREDICATES TO SKIP
                 if (r2 == 0  &&  c2 == 0)
                 {
                     continue;
                 }
-                
-                if ((queue[qt] / cols + r2) < 0  ||  (queue[qt] / cols + r2) >= rows  ||
+				if ((queue[qt] / cols + r2) < 0  ||  (queue[qt] / cols + r2) >= rows  ||
                 (queue[qt] % cols + c2) < 0  ||  (queue[qt] % cols + c2) >= cols)
                 {
                     continue;
-                }
-            
-                image[(queue[qt]/cols+r2)*cols+queue[qt]%cols+c2] = new_label;
+				} 
+				if (paint_image[index] != 0)
+				{
+					continue;
+				}
+
+				// CALCULATES DOT PRODUCT
+				dot_product = (average_surface_X * (*X)[index]) + (average_surface_Y * (*Y)[index]) + (average_surface_Z * (*Z)[index]);
+				
+				// CALCULATES ANGLE 
+				distance_A = sqrt( pow(average_surface_X, 2) + pow(average_surface_Y, 2) + pow(average_surface_Z,2) );
+				distance_B = sqrt( pow((*X)[index], 2) + pow((*Y)[index],2 ) + pow((*Z)[index], 2) );  
+				angle = acos(dot_product / (distance_A * distance_B));
+
+				if (angle > ANGULAR_THRESHOLD)
+				{
+					continue;
+				}
+
+				total[0] += (*X)[index];
+				total[1] += (*Y)[index];
+				total[2] += (*Z)[index];
+
+				average_surface_X = total[0] / count;
+				average_surface_Y = total[1] / count;
+				average_surface_Z = total[2] / count;
+
+                paint_image[index] = new_label;
                 
                 count++;
                 
                 queue[qh] = (queue[qt] / cols + r2) * cols+ queue[qt] % cols + c2;
                 
-                qh= (qh + 1) % MAX_QUEUE;
+                qh = (qh + 1) % MAX_QUEUE;
                 
                 if (qh == qt)
                 {
@@ -219,10 +253,15 @@ int main(int argc, char *argv[])
 {
 	// VARIABLE DECLARATION SECTION
 	FILE *image_file;
-	int IMAGE_ROWS, IMAGE_COLS, IMAGE_BYTES;
+	int IMAGE_ROWS, IMAGE_COLS, IMAGE_BYTES, i, j, r, c, regions, k;
+	int new_label = 30;
+	int index = 0;
+	int count = 0;
+	regions = 0;
 	char file_header[MAXLENGTH];
-	unsigned char *input_image, *thresholded_image;
-	double *X, *Y, *Z;
+	unsigned char *input_image, *thresholded_image, *paint_image;
+	double *S_X, *S_Y, *S_Z;
+	int valid = 0;
 
 	if (argc != 2)
 	{
@@ -250,11 +289,58 @@ int main(int argc, char *argv[])
 	/* THRESHOLD IMAGE */
 	thresholded_image = threshold_image(IMAGE_ROWS, IMAGE_COLS, input_image);
 
-	/* CALCULATES 3D POINTS */
-	calc_3Dpoints(thresholded_image, IMAGE_ROWS, IMAGE_COLS, &X, &Y, &Z);
+	/* CALCULATE SURFACE NORMALS */
+	calc_surface_normal(input_image, thresholded_image, IMAGE_ROWS, IMAGE_COLS, &S_X, &S_Y, &S_Z);
 
+	paint_image = calloc(IMAGE_ROWS * IMAGE_COLS, sizeof(unsigned char));
 
-	printf("X: %lf, Y: %lf, Z: %lf\n", X[0], Y[0], Z[0]);
+	/* REGION GROW POINTS */
+	for (i = 2; i < IMAGE_ROWS - 2; i++)
+	{
+		for (j = 2; j < IMAGE_COLS - 2; j++)
+		{
+			valid = 1;
+			for (r = -2; r < 3; r++)
+			{
+				for (c = -2; c < 3; c++)
+				{
+					index = ((i + r) * IMAGE_COLS) + (j + c);
+					if (thresholded_image[index] == 255 || paint_image[index] != 0)
+					{
+						valid = 0;
+					}
+				}
+			}
+			//printf("Valid: %d\n", valid);
+			if (valid == 1)
+			{
+				count = queue_paint_full(input_image, paint_image, IMAGE_ROWS, IMAGE_COLS, i, j, 255, new_label, &S_X, &S_Y, &S_Z);
+				//printf("Count: %d\n", count);
+				
+				if (count < 100)
+				{
+					for (k = 0; k < (IMAGE_ROWS * IMAGE_COLS); k++)
+					{
+						if (paint_image[k] == new_label)
+						{
+							paint_image[k] = 0;
+						}
+					}
+				}
+				else
+				{
+					regions++;
+					new_label += 30;
+					printf("R: %d, C: %d, Region: %d, Pixels: %d\n", i, j, regions, count);
+				}
+			}
+
+		}
+	}
+
+	//count = queue_paint_full(input_image, paint_image, IMAGE_ROWS, IMAGE_COLS, 61, 77, 255, 255, &S_X, &S_Y, &S_Z);
+	//printf("Count: %d\n", count);
+	save_image(paint_image, "paint.ppm", IMAGE_ROWS, IMAGE_COLS);
 
 	return 0;
 }
