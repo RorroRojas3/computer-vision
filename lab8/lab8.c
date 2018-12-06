@@ -121,11 +121,6 @@ void calc_surface_normal(unsigned char *image, unsigned char *threshold_image, i
 	// Obtains 3D points in image
 	calc_3Dpoints(image, rows, cols, &X, &Y, &Z);
 
-	/*for (i = 0; i < 5; i++)
-	{
-		printf("X: %lf, Y: %lf, Z: %lf\n", X[i], Y[i], Z[i]);
-	}*/
-
 	// ALLOCATION OF MEMORY
 	*S_X = calloc(rows * cols, sizeof(double *));
 	*S_Y = calloc(rows * cols, sizeof(double *));
@@ -303,8 +298,6 @@ int main(int argc, char *argv[])
 
 	/* CALCULATE SURFACE NORMALS */
 	calc_surface_normal(input_image, thresholded_image, IMAGE_ROWS, IMAGE_COLS, &S_X, &S_Y, &S_Z);
-
-/*	*/
 
 	/* ALLOCATE MEMORY FOR OUTPUT IMAGE WHICH WILL BE USED FOR REGION GROW */
 	paint_image = calloc(IMAGE_ROWS * IMAGE_COLS, sizeof(unsigned char));
