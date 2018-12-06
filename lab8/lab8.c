@@ -7,7 +7,7 @@
 #define THRESHOLD 137
 #define PIXEL_WITDH 3
 #define MAX_QUEUE 10000
-#define ANGULAR_THRESHOLD 0.7
+#define ANGULAR_THRESHOLD 0.8
 
 // RETURNS PPM IMAGE
 unsigned char *read_in_image(int rows, int cols, FILE *image_file)
@@ -121,6 +121,11 @@ void calc_surface_normal(unsigned char *image, unsigned char *threshold_image, i
 	// Obtains 3D points in image
 	calc_3Dpoints(image, rows, cols, &X, &Y, &Z);
 
+	/*for (i = 0; i < 5; i++)
+	{
+		printf("X: %lf, Y: %lf, Z: %lf\n", X[i], Y[i], Z[i]);
+	}*/
+
 	// ALLOCATION OF MEMORY
 	*S_X = calloc(rows * cols, sizeof(double *));
 	*S_Y = calloc(rows * cols, sizeof(double *));
@@ -202,8 +207,8 @@ int queue_paint_full(unsigned char *image, unsigned char *paint_image, int rows,
                 {
                     continue;
                 }
-				if ((queue[qt] / cols + r2) < 0  ||  (queue[qt] / cols + r2) >= rows  ||
-                (queue[qt] % cols + c2) < 0  ||  (queue[qt] % cols + c2) >= cols)
+				if ((queue[qt] / cols + r2) < 0  ||  (queue[qt] / cols + r2) >= rows - PIXEL_WITDH  ||
+                (queue[qt] % cols + c2) < 0  ||  (queue[qt] % cols + c2) >= cols - PIXEL_WITDH)
                 {
                     continue;
 				} 
@@ -299,13 +304,15 @@ int main(int argc, char *argv[])
 	/* CALCULATE SURFACE NORMALS */
 	calc_surface_normal(input_image, thresholded_image, IMAGE_ROWS, IMAGE_COLS, &S_X, &S_Y, &S_Z);
 
+/*	*/
+
 	/* ALLOCATE MEMORY FOR OUTPUT IMAGE WHICH WILL BE USED FOR REGION GROW */
 	paint_image = calloc(IMAGE_ROWS * IMAGE_COLS, sizeof(unsigned char));
 
 	/* REGION GROW  */
-	for (i = 2; i < IMAGE_ROWS - 2; i++)
+	for (i = 2; i < IMAGE_ROWS - PIXEL_WITDH; i++)
 	{
-		for (j = 2; j < IMAGE_COLS - 2; j++)
+		for (j = 2; j < IMAGE_COLS - PIXEL_WITDH; j++)
 		{
 			valid = 1;
 			for (r = -2; r < 3; r++)
